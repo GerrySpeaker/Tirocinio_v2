@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 import database as db
 
+#Sembrerebbe un inizio interessante
 app = Flask(__name__)
 
 # Configurazione
