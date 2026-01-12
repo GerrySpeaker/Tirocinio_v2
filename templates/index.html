@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Labiale Duo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Sidebar (quella tua originale) -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <img src="https://i.imgur.com/7zL5s9k.png" alt="Logo">
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/" class="active">Home</a>
+                <a href="/about">Info</a>
+                <a href="/contact">Contatti</a>
+            </nav>
+        </aside>
+
+        <div class="progress-container"><div class="progress-bar" id="barra"></div></div>
+
+        <div class="content-wrapper">
+            <main>
+                <h1>Impara a leggere le labbra</h1>
+                <p style="margin:30px 0; font-size:18px;">Clicca sul bottone per iniziare il tuo percorso</p>
+
+                <!-- Bottone iniziale -->
+                <div id="schermataIniziale">
+                    <button class="start-button" onclick="mostraLivelli()">Inizia la lezione</button>
+                </div>
+
+                <!-- Lista livelli (nuova versione bella con 13 cerchi) -->
+                <div id="listaLivelli" style="display:none; margin-top:50px;">
+                    <h2 style="text-align:center; margin-bottom:40px; font-size:32px;">I tuoi livelli</h2>
+                    <div class="griglia-livelli" id="elenco"></div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <style>
+    /* Griglia bellissima stile Duolingo */
+    .griglia-livelli {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .livello-box {
+        aspect-ratio: 1 / 1;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 38px;
+        font-weight: bold;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+        position: relative;
+    }
+    .livello-box.locked   { background: #b9b9b9; color: #777; cursor: not-allowed; }
+    .livello-box.completato { background: #58cc02; }
+    .livello-box.prossimo  { background: #ffb400; transform: scale(1.1); box-shadow: 0 10px 25px rgba(255,180,0,0.4); }
+    .livello-box:hover:not(.locked) { transform: translateY(-8px) scale(1.05); }
+    .lock-icon { position: absolute; font-size: 50px; opacity: 0.7; }
+    </style>
+
+    <script>
+        const TOTALE_LIVELLI = 13;
+        let livelliCompletati = 4;  // ← poi sostituirai con i dati reali dal server
+
+        function mostraLivelli() {
+            document.getElementById("schermataIniziale").style.display = "none";
+            document.getElementById("listaLivelli").style.display = "block";
+            generaGriglia();
+        }
+
+        function generaGriglia() {
+            const elenco = document.getElementById("elenco");
+            elenco.innerHTML = "";
+
+            for (let i = 1; i <= TOTALE_LIVELLI; i++) {
+                const box = document.createElement("div");
+                box.className = "livello-box";
+
+                if (i <= livelliCompletati) {
+                    box.classList.add("completato");
+                    box.innerHTML = i + " ✓";
+                } else if (i === livelliCompletati + 1) {
+                    box.classList.add("prossimo");
+                    box.textContent = i;
+                } else {
+                    box.classList.add("locked");
+                    box.innerHTML = `${i}<div class="lock-icon">🔒</div>`;
+                }
+
+                box.onclick = () => {
+                    if (i <= livelliCompletati + 1) {
+                        alert(`Apro il livello ${i}`);
+                        // window.location = "/gioca/" + i;  // decommenta quando colleghi Flask
+                    } else {
+                        alert("Completa prima i livelli precedenti!");
+                    }
+                };
+
+                elenco.appendChild(box);
+            }
+
+            // Barra progresso
+            const perc = (livelliCompletati / TOTALE_LIVELLI) * 100;
+            document.getElementById("barra").style.width = perc + "%";
+        }
+    </script>
+</body>
+</html>
