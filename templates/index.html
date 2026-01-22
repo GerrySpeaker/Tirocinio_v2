@@ -36,7 +36,20 @@
                 <!-- Lista livelli (nuova versione bella con 13 cerchi) -->
                 <div id="listaLivelli" style="display:none; margin-top:50px;">
                     <h2 style="text-align:center; margin-bottom:40px; font-size:32px;">I tuoi livelli</h2>
-                    <div class="griglia-livelli" id="elenco"></div>
+                    <div class="griglia-livelli" id="elenco">
+                        {% for liv in livelli %}  <!-- Itera su tutti i livelli passati dal backend -->
+                         <div class="livello-box">
+                            <a href="/livello/{{ liv._id}}" class="livello-link">
+                                <span>{{ liv.numero_livello }}</span>  <!-- Mostra il numero del livello -->
+                            </a>
+                         </div>
+                        {% endfor %}
+                    </div>
+
+                    <div id="esercizio" style="display: none">
+                        <!-- Qui sarà caricato il contenuto dell'esercizio -->
+                    </div>
+                    </div>
                 </div>
             </main>
         </div>
@@ -104,8 +117,9 @@
 
                 box.onclick = () => {
                     if (i <= livelliCompletati + 1) {
-                        alert(`Apro il livello ${i}`);
+                        //alert(`Apro il livello ${i}`);
                         // window.location = "/gioca/" + i;  // decommenta quando colleghi Flask
+                        window.location = `/livello/${i}`;
                     } else {
                         alert("Completa prima i livelli precedenti!");
                     }
@@ -119,5 +133,38 @@
             document.getElementById("barra").style.width = perc + "%";
         }
     </script>
+
+    <script>
+    // Gestisce il click sui livelli
+    document.querySelectorAll('.livello-box').forEach(livello => {
+        livello.addEventListener('click', () => {
+            const livelloId = livello.getAttribute('data-livello-id');  // Ottieni l'ID del livello
+
+            // Fai una richiesta per ottenere il contenuto del livello
+            fetch(`/livelli/${livelloId}/gioca`)
+                .then(response => response.json())
+                .then(data => {
+                    // Aggiorna la sezione del contenuto con i dettagli dell'esercizio
+                    const esercizioEl = document.getElementById("esercizio");
+                    esercizioEl.innerHTML = `
+                        <h2>${data.titolo}</h2>
+                        <p>${data.testo}</p>
+                        <video src="${data.video}" controls></video>
+                        <div class="choices-grid">
+                            ${data.scelte.map(choice => `<button>${choice}</button>`).join('')}
+                        </div>
+                    `;
+                    // Mostra la sezione dell'esercizio e nascondi la griglia dei livelli
+                    document.getElementById('listaLivelli').style.display = 'none';
+                    esercizioEl.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error("Errore nel caricamento dell'esercizio:", error);
+                });
+        });
+    });
+</script>
+
+
 </body>
 </html>

@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, abort
 import database as db
 
 #Sembrerebbe un inizio interessante
@@ -13,7 +13,9 @@ app.config['DEBUG'] = True
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    # Recupera i livelli dal database
+    livelli = db.ottieni_livelli()
+    return render_template('index.html', livelli=livelli)
 
 
 # ===== ROUTE TIPOLOGIE =====
@@ -78,6 +80,14 @@ def post_livello():
     try:
         dati = request.get_json()
 
+        contenuto = {
+            "tipo": "mimo_labiale",
+            "video": dati['video'],
+            "testo": dati['testo'],
+            "scelte": dati['scelte'],
+            "risposta": dati['risposta']
+        }
+
         livello_id = db.crea_livello(
             numero = dati['numero_livello'],
             titolo = dati['titolo'],
@@ -121,9 +131,82 @@ def get_livello(livello_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 400
     
+# ===== ROUTE GIOCA =========
+
+@app.route('/livelli/<livello_id>/gioca', methods=['GET'])
+def gioca_livello(livello_id):
+    "Renderizza la pagina esercizio per il livello selezionato"
+    try:
+        livello = db.trova_livello(livello_id)
+        if not livello:
+            return render_template("404.html"), 404
+
+        # Assumendo che livello['contenuto'] contenga i dati dell'esercizio
+        # es: {"tipo":"mimo_labiale","video":"videos/ciao.mp4","choices":[...],"answer":"CIAO"}
+        contenuto = livello.get("contenuto", {})
+
+        if not isinstance(contenuto, dict):
+            return render_template("error.html", error = "Contenuto livello non valido"), 500
+        
+        if contenuto.get("tipo") != "mimo labiale":
+            return render_template("unsupported_exercise.html", livello=livello), 400
+        
+        return jsonify({
+            "titolo": livello['titolo'],
+            "testo": contenuto.get('testo', ''),
+            "video": contenuto.get('video', ''),
+            "scelte": contenuto.get('scelte', [])
+        })
+
+    except Exception as e:
+        return render_template("error.html", error=str(e)), 500
+    
+# ===== ROUTE CORREGGERE =========
+
+@app.route('/livelli/<livello_id>/verifica', methods=['POST'])
+def verifica_risposta(livello_id):
+    try: 
+        livello = db.trova_livello(livello_id)
+        if not livello:
+            return jsonify({"error": "Livello non trovato"}), 404
+        
+        contenuto = livello.get("contenuto", {})
+        if not isinstance(contenuto, dict) or contenuto.get("tipo") != "mimo_labiale":
+            return jsonify({"error": "Contenuto livello non valido"}), 400
+
+        dati = request.get_json()
+        scelta = dati.get("scelta")
+
+        corretta = (scelta == contenuto.get("risposta"))
+
+        return jsonify({
+            "corretta": corretta
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    
+# ===== ROUTE LIVELLO ======
+
+@app.route('/livello/<int:numero>', methods=['GET'])
+def livello(numero):
+    print("Route /livello chiamata con numero=", numero)
+    livello = db.trova_livello_per_numero(numero)
+    print("Livello trovato? ", bool(livello))
+    if not livello:
+        return render_template("404.html"), 404
+    
+    livello["_id"] = str(livello["_id"])
+    livello["tipologia_id"] = str(livello["tipologia_id"])
+    
+    contenuto = livello.get("contenuto", {})
+    if not isinstance(contenuto, dict):
+        return render_template("error.html", error= "Contenuto non valido"), 500
+    
+    # Renderizza la pagina dell'esercizio con i dettagli del livello
+    return render_template("esercizio_mimo.html", livello=livello, contenuto=contenuto)
 
 # ===== ROUTE PROGRESSI =====
-
 
 @app.route('/progressi/completa', methods = ['POST'])
 def completa_livello():

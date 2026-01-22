@@ -41,7 +41,7 @@ def trova_tipologia(tipologia_id):
 # ============ FUNZIONI PER LIVELLI ============
 
 def crea_livello(numero, titolo, tipologia_id, contenuto, difficolta="medio"):
-    """Crea un nuovo livello"""
+    """Crea un nuovo livello con un contenuto tipo esercizio mimo labiale"""
     # Trova la tipologia
     tipologia = trova_tipologia(tipologia_id)
     if not tipologia:
@@ -52,7 +52,7 @@ def crea_livello(numero, titolo, tipologia_id, contenuto, difficolta="medio"):
         "titolo": titolo,
         "tipologia_id": ObjectId(tipologia_id),
         "tipologia_nome": tipologia['nome'],
-        "contenuto": contenuto,
+        "contenuto": contenuto, # Qui viene aggiunto il contenuto dell'esercizio, che si trova nell'app.py (/livelli)
         "difficolta": difficolta,
         "punti_ricompensa": tipologia.get('punti_base', 10),
         "ordine": numero,
@@ -81,6 +81,9 @@ def trova_livello(livello_id):
     
     return db.livelli_collection.find_one({"_id": ObjectId(livello_id)})
 
+def trova_livello_per_numero(numero):
+    """Trova livello per numero_livello"""
+    return db.livelli_collection.find_one({"numero_livello": numero, "attivo": True})
 
 # ============ FUNZIONI PER PROGRESSI ============
 
