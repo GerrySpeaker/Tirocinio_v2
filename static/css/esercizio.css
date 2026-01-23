@@ -1,0 +1,99 @@
+/* Background coerente con home */
+body {
+  background: #f8f9fa;
+}
+
+/* Centra la card */
+.exercise-wrapper {
+  display: flex;
+  justify-content: center;
+  /*padding-top: 80px;*/
+}
+
+/* Card principale */
+.exercise-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 760px;
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  text-align: center;
+}
+
+/* Titolo */
+.exercise-title {
+  font-size: 36px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  color: #2d2d2d;
+}
+
+/* Sottotitolo */
+.exercise-subtitle {
+  font-size: 18px;
+  margin-bottom: 24px;
+  color: #555;
+}
+
+/* Video */
+.exercise-video {
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.exercise-video video {
+  width: 100%;
+  display: block;
+}
+
+/* Griglia risposte */
+.exercise-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-top: 10px;
+}
+
+/* Pulsanti risposta */
+.choice-btn {
+  background: #f1f3f5;
+  border: none;
+  border-radius: 18px;
+  padding: 18px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.choice-btn:hover {
+  transform: translateY(-4px);
+  background: #e6f9d5;
+}
+
+/* Footer */
+.exercise-footer {
+  margin-top: 30px;
+}
+
+/* Bottone back stile Duolingo */
+.back-btn {
+  background: #58cc02;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 14px 26px;
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(88,204,2,0.4);
+  transition: transform 0.2s;
+}
+
+.back-btn:hover {
+  transform: translateY(-3px);
+}

@@ -8,7 +8,7 @@ body { font-family: "Helvetica Neue", Arial, sans-serif; background: #f8f9fa; co
 .sidebar-nav a { color: white; text-decoration: none; padding: 1rem; text-align: center; display: block; transition: background 0.2s; }
 .sidebar-nav a:hover, .sidebar-nav a.active { background: rgba(255,255,255,0.3); }
 
-/* Progresso e cuori */
+/* Progresso */
 .progress-container { position: fixed; top: 0; left: 250px; right: 0; height: 8px; background: #e0e0e0; z-index: 10; }
 .progress-bar { height: 100%; background: #58cc02; width: 0%; transition: width 0.4s; }
 
@@ -29,7 +29,7 @@ h1 { font-size: 42px; margin-bottom: 20px; }
 
 /* Presentazione esercizio*/
 .exercise-card{
-  background: white;
+  background: grey;
   border-radius: 20px;
   padding: 24px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);

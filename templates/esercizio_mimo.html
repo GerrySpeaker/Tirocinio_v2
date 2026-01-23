@@ -1,95 +1,42 @@
-<!doctype html>
-<html lang="it">
+<main>
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{{ livello.titolo }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ livello.titolo }}</title>
+
+<!-- CSS base (home) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+<!-- CSS specifico esercizio -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/esercizio.css') }}">
 </head>
 
-<body>
-    <div class="app-container">
-        <aside class="sidebar">
-            <!-- Sidebar contenuto qui -->
-        </aside>
+  <div class="exercise-wrapper">
+    <div class="exercise-card">
 
-        <div class="progress-container">
-            <div class="progress-bar" id="progressBar"></div>
-        </div>
+      <h1 class="exercise-title">{{ livello.titolo }}</h1>
+      <p class="exercise-subtitle">
+        {{ contenuto.testo }}
+      </p>
 
-        <div class="content-wrapper">
-            <main>
-                <div class="exercise-card">
-                    <h1 class="exercise-title">{{ livello.titolo }}</h1>
-                    <div class="exercise-subtitle">
-                        {{ contenuto.get("testo", "Guarda le labbra e scegli la parola corretta") }}
-                    </div>
+      <div class="exercise-video">
+        <video controls>
+          <source src="{{ url_for('static', filename=contenuto.video) }}" type="video/mp4">
+        </video>
+      </div>
 
-                    <div class="video-box">
-                        <video id="vid" controls playsinline preload="metadata">
-                            <source src="{{ url_for('static', filename=contenuto['video']) }}" type="video/mp4">
-                            Il browser non supporta il video.
-                        </video>
-                    </div>
+      <div class="exercise-choices">
+        {% for scelta in contenuto.scelte %}
+          <button class="choice-btn">{{ scelta }}</button>
+        {% endfor %}
+      </div>
 
-                    <div class="choices-grid" id="scelte"></div>
-
-                    <div class="feedback" id="feedback" aria-live="polite"></div>
-
-                    <div class="next-row">
-                        <button class="next-button" id="nextBtn" type="button">Avanti →</button>
-                    </div>
-                </div>
-            </main>
-        </div>
-
-        <div id = "livello"
-             data-livello-id = "{{livello['_id'] | tojson}}"
-             data-contenuto = "{{contenuto | tojson }}">
-        </div>
+      <div class="exercise-footer">
+        <button class="back-btn" onclick="window.location.href='/'">
+          ← Torna ai livelli
+        </button>
+      </div>
 
     </div>
-
-<script>
-(() => {
-  const livelloEl = document.getElementById("livello");
-  const livelloId = livelloEl.dataset.livelloId; // Recupera l'id del livello
-  const content = JSON.parse(livelloEl.dataset.content); // Recupera il contenuto
-
-  // Controllo tramite log se ci sono dei problemi
-  console.log('Livello Id', livelloId);
-  console.log('Contenuto', content);
-
-  const scelteEl = document.getElementById("scelte");
-  const feedbackEl = document.getElementById("feedback");
-
-  // Aggiungi le scelte come pulsanti
-  content.scelte.forEach((s) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "btn-scelta";
-    btn.textContent = s;
-
-    // Gestisci l'evento click per il pulsante
-    btn.addEventListener("click", async () => {
-      feedbackEl.textContent = "…";  // Inizia la verifica
-
-      const res = await fetch(`/livelli/${livelloId}/verifica`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scelta: s })  // Invia la risposta selezionata
-      });
-
-      const data = await res.json();
-
-      // Visualizza il feedback
-      feedbackEl.textContent = data.corretta ? "✅" : "❌";
-    });
-
-    scelteEl.appendChild(btn);  // Aggiungi il pulsante all'elemento scelte
-  });
-})();
-</script>
-
-</body>
-</html>
+  </div>
+</main>
