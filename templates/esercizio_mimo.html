@@ -27,7 +27,7 @@
 
       <div class="exercise-choices">
         {% for scelta in contenuto.scelte %}
-          <button class="choice-btn">{{ scelta }}</button>
+          <button class="choice-btn" onclick="window.location.href='/livelli/<livello_id>/verifica'">{{ scelta }}</button>
         {% endfor %}
       </div>
 
