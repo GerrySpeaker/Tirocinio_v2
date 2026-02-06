@@ -40,7 +40,7 @@ def trova_tipologia(tipologia_id):
 
 # ============ FUNZIONI PER LIVELLI ============
 
-def crea_livello(numero, titolo, tipologia_id, contenuto, difficolta="medio"):
+def crea_livello(numero, titolo, tipologia_id, contenuto, difficolta="medio", sbloccato= True, completato= False):
     """Crea un nuovo livello con un contenuto tipo esercizio mimo labiale"""
     # Trova la tipologia
     tipologia = trova_tipologia(tipologia_id)
@@ -57,10 +57,11 @@ def crea_livello(numero, titolo, tipologia_id, contenuto, difficolta="medio"):
         "punti_ricompensa": tipologia.get('punti_base', 10),
         "ordine": numero,
         "attivo": True,
+        "sbloccato": sbloccato,         # Questi due dati servono per una visualizzazione dinamica dei livelli
+        "completato": completato,
         "creato_il": datetime.now()
     }
-    
-    
+
     risultato = db.livelli_collection.insert_one(livello)
     return str(risultato.inserted_id)
 

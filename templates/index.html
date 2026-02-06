@@ -87,8 +87,7 @@
     </style>
 
     <script>
-        const TOTALE_LIVELLI = 13;
-        let livelliCompletati = 4;  // ← poi sostituirai con i dati reali dal server
+        livelliCompletati = 0;
 
         function mostraLivelli() {
             document.getElementById("schermataIniziale").style.display = "none";
@@ -99,7 +98,44 @@
         function generaGriglia() {
             const elenco = document.getElementById("elenco");
             elenco.innerHTML = "";
+            TOTALE_LIVELLI = 0;
 
+                const livelli =[
+                    {_id: "1", numero_livello: 1, sbloccato: true, completato: true},
+                    {_id: "2", numero_livello: 2, sbloccato: true, completato: true},
+                    {_id: "3", numero_livello: 3, sbloccato: true, completato: true},
+                    {_id: "4", numero_livello: 4, sbloccato: true, completato: false},
+                ];
+
+            livelli.forEach(liv => {
+                TOTALE_LIVELLI++;
+                const box = document.createElement("div");
+                box.className = "livello-box";
+
+                if (liv.sbloccato){
+                    box.classList.add("sbloccato");
+                    if(liv.completato){
+                        box.classList.add("completato");
+                        box.innerHTML = `${liv.numero_livello}`;
+                        livelliCompletati++;
+                    } else {
+                        box.classList.add("prossimo");
+                        box.innerHTML = liv.numero_livello;
+                    }
+                } else {
+                    box.classList.add("locked");
+                    box.innerHTML = `${liv.numero_livello}<div class="lock-icon">🔒</div>`;
+                }
+
+                // Per collegare ogni box ad una singola pagina per ogni livello
+                box.onclick = () => {
+                    window.location.href = `/livello/${liv._id}`; // Reinderizza alla pagina dell'esercizio
+                };
+
+                elenco.appendChild(box);
+            });
+
+            /*
             for (let i = 1; i <= TOTALE_LIVELLI; i++) {
                 const box = document.createElement("div");
                 box.className = "livello-box";
@@ -127,6 +163,7 @@
 
                 elenco.appendChild(box);
             }
+            */
 
             // Barra progresso
             const perc = (livelliCompletati / TOTALE_LIVELLI) * 100;

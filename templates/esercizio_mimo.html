@@ -32,6 +32,15 @@
       </div>
 
       <div class="exercise-footer">
+        {% if livello.completato %}
+          <button class="next-btn" onclick="window.location.href='/livello/{{prossimo_livello_id}}'"> <!-- Da creare in caso la route per andare avanti di livello -->
+            Avanti ->
+          </button>
+        {% else %}
+          <button class="disable-btn" disabled>
+            Completa prima questo livello
+          </button>
+        {% endif %}
         <button class="back-btn" onclick="window.location.href='/'">
           ← Torna ai livelli
         </button>
