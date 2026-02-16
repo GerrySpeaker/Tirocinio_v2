@@ -161,9 +161,9 @@ def gioca_livello(livello_id):
     except Exception as e:
         return render_template("error.html", error=str(e)), 500
     
-# ===== ROUTE CORREGGERE =========
+# ===== ROUTE RIPOSTA CORRETTA =========
 
-@app.route('/livelli/<livello_id>/verifica', methods=['POST'])
+@app.route('/livelli/<livello_id>/verifica', methods=['POST'])      # Il metodo POST mi serve per visualizzare la pagina con la corretta risposta
 def verifica_risposta(livello_id):
     try: 
         livello = db.trova_livello(livello_id)
@@ -180,7 +180,8 @@ def verifica_risposta(livello_id):
         corretta = (scelta == contenuto.get("risposta"))
 
         return jsonify({
-            "corretta": corretta
+            "corretta": corretta,
+            "risposta_corretta": contenuto.get("risposta", "")
         }), 200
 
     except Exception as e:

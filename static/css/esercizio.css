@@ -70,6 +70,27 @@ body {
   box-shadow: 0 4px 12px rgba(0,0,0,0.12);
 }
 
+/* Corretto */
+.choice-btn.correct{
+  background: #d9fdd3;
+  border: 2px solid #2ecc71;
+  box-shadow: 0 0 0 4px rgba(46, 204, 113, 0.25);
+}
+
+/* Sbagliato */
+.choice-btn.wrong{
+  background: #ffd6d6;
+  border: 2xp solid #e74c3c;
+  box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.25);
+}
+
+/* Se hai già risposto: blocca hover/click */
+.choice-btn:disabled{
+  opacity: 0.9;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .choice-btn:hover {
   transform: translateY(-4px);
   background: #e6f9d5;

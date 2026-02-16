@@ -87,7 +87,7 @@
     </style>
 
     <script>
-        livelliCompletati = 0;
+        livelliCompletati = 0;                  // Serve per dimostrare quanti livelli son stati completati
 
         function mostraLivelli() {
             document.getElementById("schermataIniziale").style.display = "none";
@@ -98,7 +98,7 @@
         function generaGriglia() {
             const elenco = document.getElementById("elenco");
             elenco.innerHTML = "";
-            TOTALE_LIVELLI = 0;
+            TOTALE_LIVELLI = 0;                 // Mi mostra quanti livelli vengono mostrati nella pagina
 
                 const livelli =[
                     {_id: "1", numero_livello: 1, sbloccato: true, completato: true},

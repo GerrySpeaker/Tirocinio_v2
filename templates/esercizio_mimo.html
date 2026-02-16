@@ -11,6 +11,117 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/esercizio.css') }}">
 </head>
 
+<script>
+  // Aggancia il click a tutti i bottoni
+  document.querySelectorAll(".choice-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      // evita doppio click su più scelte
+      if (btn.disabled) return;
+
+      // pulisci eventuali stati precedenti
+      document.querySelectorAll(".choice-btn").forEach(b => {
+        b.classList.remove("correct", "wrong");
+      });
+
+      const scelta = btn.dataset.choice;
+
+      try {
+        const res = await fetch(`/livelli/${LIVELLO_ID}/verifica`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ scelta })
+        });
+
+        if (!res.ok) {
+          console.error("Verifica fallita:", res.status);
+          return;
+        }
+
+        const data = await res.json();
+
+        // data.corretta deve essere true/false
+        if (data.corretta) {
+          btn.classList.add("correct");
+          // se vuoi bloccare tutto dopo la risposta corretta:
+          document.querySelectorAll(".choice-btn").forEach(b => b.disabled = true);
+        } else {
+          btn.classList.add("wrong");
+
+          // (opzionale) se il backend ti manda anche la risposta corretta:
+          // data.risposta_corretta = "CIAO"
+          if (data.risposta_corretta) {
+            const correttoBtn = [...document.querySelectorAll(".choice-btn")]
+              .find(b => b.dataset.choice === data.risposta_corretta);
+            if (correttoBtn) correttoBtn.classList.add("correct");
+          }
+        }
+
+      } catch (err) {
+        console.error("Errore fetch verifica:", err);
+      }
+    });
+  });
+</script>
+
+<script>                                                // Script creato per la corretta lettura dei bottoni di scelta
+  console.log("Script caricato");
+
+  const LIVELLO_ID = "{{ livello['_id'] }}";
+
+  document.addEventListener("DOMContentLoaded", function () {
+
+    const buttons = document.querySelectorAll(".choice-btn");
+    console.log("Bottoni trovati:", buttons.length);
+
+    buttons.forEach(function(btn) {
+
+      btn.addEventListener("click", async function() {
+
+        console.log("Click su:", btn.dataset.choice);
+
+        try {
+          const response = await fetch(`/livelli/${LIVELLO_ID}/verifica`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              scelta: btn.dataset.choice
+            })
+          });
+
+          const data = await response.json();
+          console.log("Risposta server:", data);
+
+          // reset colori
+          buttons.forEach(b => {
+            b.classList.remove("correct", "wrong");
+          });
+
+          if (data.corretta) {
+            btn.classList.add("correct");
+          } else {
+            btn.classList.add("wrong");
+          }
+
+        } catch (error) {
+          console.error("Errore fetch:", error);
+        }
+
+      });
+
+    });
+
+  });
+</script>
+
+
+<script>
+  const data = JSON.parse(document.getElementById('payload').textContent);
+  console.log(data);
+</script>
+
+
   <div class="exercise-wrapper">
     <div class="exercise-card">
 
@@ -27,7 +138,9 @@
 
       <div class="exercise-choices">
         {% for scelta in contenuto.scelte %}
-          <button class="choice-btn" onclick="window.location.href='/livelli/<livello_id>/verifica'">{{ scelta }}</button>
+          <button class="choice-btn" type= "button" data-choice="{{scelta}}">
+            {{ scelta }}
+          </button>
         {% endfor %}
       </div>
 
