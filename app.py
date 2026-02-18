@@ -62,8 +62,7 @@ def post_tipologia():
         return jsonify({"error": str(e)}), 400
     
 
-# ===== ROUTE LIVELLI =====
-
+# ================ ROUTE LIVELLI ====================
 
 @app.route('/livelli', methods = ['GET'])
 def get_livelli():
@@ -131,7 +130,7 @@ def get_livello(livello_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 400
     
-# ===== ROUTE GIOCA =========
+# ==================== ROUTE GIOCA ===========================
 
 @app.route('/livelli/<livello_id>/gioca', methods=['GET'])
 def gioca_livello(livello_id):
@@ -161,7 +160,7 @@ def gioca_livello(livello_id):
     except Exception as e:
         return render_template("error.html", error=str(e)), 500
     
-# ===== ROUTE RIPOSTA CORRETTA =========
+# ================ ROUTE RIPOSTA CORRETTA =====================
 
 @app.route('/livelli/<livello_id>/verifica', methods=['POST'])      # Il metodo POST mi serve per visualizzare la pagina con la corretta risposta
 def verifica_risposta(livello_id):
@@ -186,8 +185,38 @@ def verifica_risposta(livello_id):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 400
-    
-# ===== ROUTE LIVELLO ======
+
+
+# =============== ROUTE STATO DI COMPLETAMENTO =========================
+
+@app.route("/api/livelli", methods=["GET"])
+def api_livelli():
+    livelli = db.ottieni_livelli() # ritorna la lista con _id come stringa
+
+    # Esempio: progressi utente 
+    utente_id = "demo"
+    progressi = db.ottieni_progressi_utente(utente_id)
+
+    # Se esiste un progresso per quel livello allora è completato
+    completati = set(p["livello_id"] for p in progressi)
+
+    livelli.sort(key=lambda x: x.get("numero_livello", 0))
+
+    prev_completato = True
+
+    for liv in livelli:
+        liv_id = liv["_id"]
+
+        liv["completato"] = (liv_id in completati)
+
+        # Sblocco progressivo
+        liv["sbloccato"] = prev_completato
+
+        prev_completato = liv["completato"]
+
+    return jsonify(livelli), 200
+
+# ============ ROUTE LIVELLO ====================
 
 @app.route('/livello/<int:numero>', methods=['GET'])
 def livello(numero):
@@ -205,7 +234,29 @@ def livello(numero):
         return render_template("error.html", error= "Contenuto non valido"), 500
     
     # Renderizza la pagina dell'esercizio con i dettagli del livello
-    return render_template("esercizio_mimo.html", livello=livello, contenuto=contenuto)
+    return render_template("esercizio_mimo.html", livello=livello, contenuto=contenuto, prossimo_numero = numero + 1)
+
+
+# =========== ROUTE AVANTI PER ID======================
+
+@app.route('/livello/<livello_id>/avanti', methods=['GET'])
+def livello_successivo(livello_id):
+    # Trova livello corrente
+    livello_corrente = db.trova_livello(livello_id)
+    if not livello_corrente:
+        return render_template("404.html"), 404 # Se non esiste il livello allora non mostro la pagina
+    
+    # Trova il prossimo livello in base a quello selezionato
+    prossimo_livello = db.livelli_collection.find_one({
+        "numero_livello": livello_corrente["numero_livello"] + 1
+    })
+
+    if not prossimo_livello:
+        return render_template("completato.html") # Se non ci sono livelli, mostra un messaggio di completato
+    
+    # Rendi il prossimo livello disponibile
+    return render_template("esercizio_mimo.html", livello = prossimo_livello, contenuto = prossimo_livello.get("contenuto", {}))
+
 
 # ===== ROUTE PROGRESSI =====
 

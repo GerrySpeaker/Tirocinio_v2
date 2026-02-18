@@ -12,7 +12,7 @@
         <!-- Sidebar (quella tua originale) -->
         <aside class="sidebar">
             <div class="sidebar-logo">
-                <img src="https://i.imgur.com/7zL5s9k.png" alt="Logo">
+                <img src="C:\Users\ACEAN515-55-W1\.vscode\Prova\ProgettoLabiale\static\images\Logo_LabDuo.png" alt="Logo">
             </div>
             <nav class="sidebar-nav">
                 <a href="/" class="active">Home</a>
@@ -86,6 +86,7 @@
     .lock-icon { position: absolute; font-size: 50px; opacity: 0.7; }
     </style>
 
+    
     <script>
         livelliCompletati = 0;                  // Serve per dimostrare quanti livelli son stati completati
 
@@ -95,17 +96,24 @@
             generaGriglia();
         }
 
-        function generaGriglia() {
+        async function generaGriglia() {
             const elenco = document.getElementById("elenco");
             elenco.innerHTML = "";
             TOTALE_LIVELLI = 0;                 // Mi mostra quanti livelli vengono mostrati nella pagina
 
+            /*
+            // Qui prende i livelli reali dal server
+            const res = await fetch("/api/livelli");
+            const livelli = await res.json();
+            */
+                
                 const livelli =[
                     {_id: "1", numero_livello: 1, sbloccato: true, completato: true},
                     {_id: "2", numero_livello: 2, sbloccato: true, completato: true},
                     {_id: "3", numero_livello: 3, sbloccato: true, completato: true},
                     {_id: "4", numero_livello: 4, sbloccato: true, completato: false},
                 ];
+                
 
             livelli.forEach(liv => {
                 TOTALE_LIVELLI++;
@@ -134,36 +142,6 @@
 
                 elenco.appendChild(box);
             });
-
-            /*
-            for (let i = 1; i <= TOTALE_LIVELLI; i++) {
-                const box = document.createElement("div");
-                box.className = "livello-box";
-
-                if (i <= livelliCompletati) {
-                    box.classList.add("completato");
-                    box.innerHTML = i + " ✓";
-                } else if (i === livelliCompletati + 1) {
-                    box.classList.add("prossimo");
-                    box.textContent = i;
-                } else {
-                    box.classList.add("locked");
-                    box.innerHTML = `${i}<div class="lock-icon">🔒</div>`;
-                }
-
-                box.onclick = () => {
-                    if (i <= livelliCompletati + 1) {
-                        //alert(`Apro il livello ${i}`);
-                        // window.location = "/gioca/" + i;  // decommenta quando colleghi Flask
-                        window.location = `/livello/${i}`;
-                    } else {
-                        alert("Completa prima i livelli precedenti!");
-                    }
-                };
-
-                elenco.appendChild(box);
-            }
-            */
 
             // Barra progresso
             const perc = (livelliCompletati / TOTALE_LIVELLI) * 100;
