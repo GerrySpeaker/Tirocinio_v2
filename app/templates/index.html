@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Labiale Duo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        /* Griglia stile Duolingo */
+        .griglia-livelli {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .livello-box {
+            aspect-ratio: 1 / 1;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 38px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+            position: relative;
+        }
+        .livello-box.locked   { background: #b9b9b9; color: #777; cursor: not-allowed; }
+        .livello-box.completato { background: #58cc02; }
+        .livello-box.prossimo  { background: #ffb400; transform: scale(1.1); box-shadow: 0 10px 25px rgba(255,180,0,0.4); }
+        .livello-box:hover:not(.locked) { transform: translateY(-8px) scale(1.05); }
+        .lock-icon { position: absolute; font-size: 50px; opacity: 0.7; }
+        
+        /* Stile per l'esercizio per evitare che sia tutto attaccato */
+        #esercizio {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+        }
+        video {
+            max-width: 100%;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <img src="/static/images/Logo_LabDuo.png" alt="Logo">
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/" class="active">Home</a>
+                <a href="/about">Info</a>
+                <a href="/contact">Contatti</a>
+            </nav>
+        </aside>
+
+        <div class="content-wrapper">
+            <div class="progress-container">
+                <div class="progress-bar" id="barra"></div>
+            </div>
+
+            <main>
+                <div id = "introduzione">
+                    <h1>Impara a leggere le labbra</h1>
+                    <p style="margin:30px 0; font-size:18px;">Clicca sul bottone per iniziare il tuo percorso</p>
+                </div>
+                
+
+                <div id="schermataIniziale">
+                    <button class="start-button" onclick="mostraLivelli()">Inizia la lezione</button>
+                </div>
+
+                <div id="listaLivelli" style="display:none; margin-top:50px;">
+                    <h2 style="text-align:center; margin-bottom:40px; font-size:32px;">I tuoi livelli</h2>
+                    <div class="griglia-livelli" id="elenco"></div> 
+                </div>
+
+                <div id="esercizio" style="display: none">
+                    </div>
+            </main>
+        </div> </div> 
+        <script>
+    async function mostraLivelli() {
+        document.getElementById('schermataIniziale').style.display = 'none';
+        document.getElementById('listaLivelli').style.display = 'block';
+        await generaGriglia();
+    }
+
+    async function generaGriglia() {
+        const elenco = document.getElementById("elenco");
+        elenco.innerHTML = "Caricamento in corso...";
+        let TOTALE_LIVELLI = 0;
+        let livelliCompletati = 0;
+
+        try {
+            const res = await fetch("/api/livelli?t=" + new Date().getTime());
+            const livelli = await res.json();
+            elenco.innerHTML = ""; 
+
+            if (livelli.length === 0) {
+                elenco.innerHTML = "<p style='color: white; font-size: 20px;'>Nessun livello trovato.</p>";
+                return;
+            }
+
+            livelli.forEach(liv => {
+                TOTALE_LIVELLI++;
+                const box = document.createElement("div");
+                box.className = "livello-box";
+                box.setAttribute('data-livello-id', liv._id);
+
+                if (liv.sbloccato) {
+                    box.classList.add("sbloccato");
+                    if (liv.completato) {
+                        box.classList.add("completato");
+                        livelliCompletati++;
+                    } else {
+                        box.classList.add("prossimo");
+                    }
+                    box.innerHTML = liv.numero_livello;
+                } else {
+                    box.classList.add("locked");
+                    box.innerHTML = `${liv.numero_livello}<div class="lock-icon">🔒</div>`;
+                }
+
+                elenco.appendChild(box);
+            });
+
+            const perc = TOTALE_LIVELLI > 0 ? (livelliCompletati / TOTALE_LIVELLI) * 100 : 0;
+            document.getElementById("barra").style.width = perc + "%";
+            
+            attivaClickLivelli();
+        } catch (error) {
+            console.error("Errore nel caricamento:", error);
+            elenco.innerHTML = "<p style='color: red;'>Errore di connessione al database.</p>";
+        }
+    }
+
+    function attivaClickLivelli() {
+        document.querySelectorAll('.livello-box:not(.locked)').forEach(livello => {
+            livello.addEventListener('click', () => {
+                const livelloId = livello.getAttribute('data-livello-id');
+                
+                fetch(`/livelli/${livelloId}/gioca`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const esercizioEl = document.getElementById("esercizio");
+                        esercizioEl.innerHTML = `
+                        <div class = "esercizio-container" style="text-align:center;">
+                            <h2>${data.titolo}</h2>
+                            <p>${data.testo}</p>
+                            <video src="${data.video}" controls></video>
+                            <div class="choices-grid">
+                                ${data.scelte.map(choice => 
+                                    // Usiamo JSON.stringify per passare la stringa in modo sicuro
+                                    `<button class="start-button" onclick='verificaRisposta("${livelloId}", "${choice}")'>${choice}</button>`
+                                ).join('')}
+                            </div>
+                            <div id="risultato-esercizio" style="margin-top:20px; font-weight:bold; font-size:24px;"></div>
+                                <div style="margin-top: 30px; display: flex; justify-content: center; gap: 20px;">
+                                    
+                                    <button class="back-btn" onclick="window.location.href='/'" 
+                                    style = " 
+                                    background: #58cc02;
+                                    color: white;
+                                    border: none;
+                                    border-radius: 999px;
+                                    padding: 14px 26px;
+                                    font-size: 18px;
+                                    font-weight: 800;
+                                    cursor: pointer;
+                                    box-shadow: 0 6px 18px rgba(88,204,2,0.4);
+                                    transition: transform 0.2s;"> 
+                                    ← Torna ai livelli 
+                                    </button>
+
+                                    <button id= "btn-avanti-sempre"
+                                    style = " 
+                                    background: #58cc02;
+                                    color: white;
+                                    border: none;
+                                    border-radius: 999px;
+                                    padding: 14px 26px;
+                                    font-size: 18px;
+                                    font-weight: 800;
+                                    cursor: pointer;
+                                    box-shadow: 0 6px 18px rgba(88,204,2,0.4);
+                                    transition: transform 0.2s;"
+                                    onclick="completaESblocca('${livelloId}')">
+                                    Avanti → 
+                                    </button>
+
+                                </div>
+                        </div>
+                    `;
+                        document.getElementById('introduzione').style.display = 'none';
+                        document.getElementById('listaLivelli').style.display = 'none';
+                        esercizioEl.style.display = 'block';
+                    })
+                    .catch(error => console.error("Errore API:", error));
+            });
+        });
+    }
+        
+
+    function completaESblocca(livelloId){
+        fetch('/progressi/completa', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                utente_id: "demo",
+                livello_id: livelloId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === "success") {
+                window.location.reload();
+            } else {
+                console.error("Errore nel salvataggio:", data.error);
+            }
+        })
+        .catch(err => console.error("Errore di rete:", err));
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    function verificaRisposta(livelloId, sceltaUtente) {
+
+    console.log("DEBUG: Funzione verificaRisposta chiamata!");
+    console.log("ID ricebuto:", livelloId);
+    console.log("Scelta:", sceltaUtente);
+
+    fetch(`/livelli/${livelloId}/verifica`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scelta: sceltaUtente })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const divRisultato = document.getElementById('risultato-esercizio');
+        if (data.corretta) {
+            divRisultato.style.color = "#58cc02";
+            divRisultato.innerHTML = "Risposta Corretta! 🎉";
+
+            // Se il tasto avanti non esiste già, crealo
+            if (!document.getElementById('btn-avanti')) {
+                const btnAvanti = document.createElement('button');
+                btnAvanti.id = 'btn-avanti';
+                btnAvanti.innerHTML = "Avanti ➔";
+                
+                // Applichiamo il tuo stile (puoi usare una classe CSS se preferisci)
+                btnAvanti.style = `
+                    background: #58cc02;
+                    color: white;
+                    border: none;
+                    border-radius: 999px;
+                    padding: 14px 26px;
+                    font-size: 18px;
+                    font-weight: 800;
+                    cursor: pointer;
+                    margin-top: 20px;
+                    box-shadow: 0 6px 18px rgba(88,204,2,0.4);
+                `;
+
+                // Quando clicca Avanti, salva nel DB e torna alla home
+                btnAvanti.onclick = () => {
+                    fetch('/progressi/completa', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            utente_id: "demo", 
+                            livello_id: livelloId,
+                            punteggio: 100,
+                            accuratezza: 100
+                        })
+                    }).then(() => {
+                        window.location.reload(); // Ricarica per vedere il livello verde e la barra avanzata
+                    });
+                };
+
+                divRisultato.after(btnAvanti);
+            }
+        } else {
+            divRisultato.style.color = "#ff4b4b";
+            divRisultato.innerHTML = "Sbagliato, riprova!";
+        }
+    });
+}
+</script>
+</body>
+</html>

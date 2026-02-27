@@ -7,6 +7,8 @@ from datetime import datetime
 client = MongoClient("mongodb://localhost:27017/")
 db = client.labiale_db
 
+livelli_collection = db["livelli_collection"]
+
 
 # ============ FUNZIONI PER TIPOLOGIE ============
 
@@ -175,6 +177,37 @@ def verifica_connessione():
     except Exception as e:
         print(f"❌ Errore connessione MongoDB: {e}")
         return False
+
+# ======= Cambio dei flag di completamento e sblocco ===========
+
+def sblocca_e_completa_livello(livello_id_attuale, livello_id_successivo = None):
+    """
+    Imposta il livello attuale come completato e, se fornito,
+    sblocca il livello successivo.
+    """
+    # 1) Imposta il livello attuale come completato
+    db.livelli_collection.update_one(
+        {"_id": ObjectId(livello_id_attuale)},
+        {"$set": {"completato": True}}
+    )
+    
+    #2) Se c'è un livello successivo, cambiamo il flag "sbloccato" a True
+    if livello_id_successivo:
+        db.livelli_collection.update_one(
+            {"_id": ObjectId(livello_id_successivo)},
+            {"$set": {"sbloccato": True}}
+        )
+
+    return True
+
+def ottieni_livello_per_id(livello_id):
+    try:
+        # Cerca nel database i livello in base all'id
+        return db.livelli_collection.find_one({"_id": ObjectId(livello_id)})
+    except Exception as e:
+        print("Errore nel trovare il livello: {e}")
+        return None
+
 
 
 # Test connessione all'avvio

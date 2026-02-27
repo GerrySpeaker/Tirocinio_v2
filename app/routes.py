@@ -1,17 +1,17 @@
-from flask import Flask, request, jsonify, render_template, abort
-import database as db
+from flask import Blueprint, request, jsonify, render_template, abort
+from bson.objectid import ObjectId
 
-#Sembrerebbe un inizio interessante
-app = Flask(__name__)
+# Il mio nuovo file models.py è il mio vecchio database.py
+# ora rimanendo della stessa idea continuerò ad usare db per evitare che si rompa il codice
+from app import models as db
 
-# Configurazione
-app.config['DEBUG'] = True
-
+# Creiamo il Blueprint 
+main = Blueprint('main', __name__)
 
 # ===== ROUTE HOME =====
 
 
-@app.route('/')
+@main.route('/')
 def home():
     # Recupera i livelli dal database
     livelli = db.ottieni_livelli()
@@ -20,17 +20,15 @@ def home():
 
 # ===== ROUTE TIPOLOGIE =====
 
-@app.route('/contact', methods=['GET'])
+@main.route('/contact', methods=['GET'])
 def contact():
     return render_template('contact.html')
 
-@app.route('/about', methods=['GET'])
+@main.route('/about', methods=['GET'])
 def about():
     return render_template('about.html')
-
-
     
-@app.route('/tipologie', methods=['GET'])
+@main.route('/tipologie', methods=['GET'])
 def get_tipologie():
     """Mostra tutte le tipolige"""
     try:
@@ -40,7 +38,7 @@ def get_tipologie():
         return jsonify({"error": str(e)}), 400
     
 
-@app.route('/tipologie', methods=['POST'])
+@main.route('/tipologie', methods=['POST'])
 def post_tipologia():
     """Crea una nuova tipologia"""
     try:
@@ -64,7 +62,7 @@ def post_tipologia():
 
 # ================ ROUTE LIVELLI ====================
 
-@app.route('/livelli', methods = ['GET'])
+@main.route('/livelli', methods = ['GET'])
 def get_livelli():
     """Mostra tutti i livelli"""
     try: 
@@ -74,7 +72,7 @@ def get_livelli():
         return jsonify({"error" : str(e)}), 400
     
 
-@app.route('/livelli', methods = ['POST'])
+@main.route('/livelli', methods = ['POST'])
 def post_livello():
     try:
         dati = request.get_json()
@@ -107,7 +105,7 @@ def post_livello():
         return jsonify({"error": str(e)}), 400
     
 
-@app.route('/livelli/<livello_id>', methods = ['GET'])
+@main.route('/livelli/<livello_id>', methods = ['GET'])
 def get_livello(livello_id):
     try:
         livello = db.trova_livello(livello_id)
@@ -132,37 +130,38 @@ def get_livello(livello_id):
     
 # ==================== ROUTE GIOCA ===========================
 
-@app.route('/livelli/<livello_id>/gioca', methods=['GET'])
+@main.route('/livelli/<livello_id>/gioca', methods=['GET'])
 def gioca_livello(livello_id):
-    "Renderizza la pagina esercizio per il livello selezionato"
+    print(f"Debug: Flask ha ricevuto l'ID: '{livello_id}")
     try:
-        livello = db.trova_livello(livello_id)
+        # Recupera il livello dal database (usa la funzione che hai in models.py)
+        livello = db.ottieni_livello_per_id(livello_id) 
+        
         if not livello:
-            return render_template("404.html"), 404
+            print(f"Livello {livello_id} non trovato nel DB")
+            return jsonify({"error": "Livello non trovato"}), 404
 
-        # Assumendo che livello['contenuto'] contenga i dati dell'esercizio
-        # es: {"tipo":"mimo_labiale","video":"videos/ciao.mp4","choices":[...],"answer":"CIAO"}
+        # Estraiamo i dati che servono al nostro JavaScript per costruire l'esercizio.
+        # ATTENZIONE: adatta le chiavi se nel tuo database si chiamano diversamente!
         contenuto = livello.get("contenuto", {})
-
-        if not isinstance(contenuto, dict):
-            return render_template("error.html", error = "Contenuto livello non valido"), 500
         
-        if contenuto.get("tipo") != "mimo labiale":
-            return render_template("unsupported_exercise.html", livello=livello), 400
+        dati_esercizio = {
+            "titolo": livello.get("titolo", f"Livello {livello.get('numero_livello')}"),
+            "testo": livello.get("testo", "Guarda il video e indovina la parola!"),
+            "video": contenuto.get("video", ""), 
+            "scelte": contenuto.get("scelte", [])
+        }
         
-        return jsonify({
-            "titolo": livello['titolo'],
-            "testo": contenuto.get('testo', ''),
-            "video": contenuto.get('video', ''),
-            "scelte": contenuto.get('scelte', [])
-        })
-
+        # Rispondiamo con un JSON invece che con un render_template!
+        return jsonify(dati_esercizio), 200
+        
     except Exception as e:
-        return render_template("error.html", error=str(e)), 500
+        # Anche in caso di errore, rispondiamo in JSON così il browser non si blocca
+        return jsonify({"error": str(e)}), 500
     
 # ================ ROUTE RIPOSTA CORRETTA =====================
 
-@app.route('/livelli/<livello_id>/verifica', methods=['POST'])      # Il metodo POST mi serve per visualizzare la pagina con la corretta risposta
+@main.route('/livelli/<livello_id>/verifica', methods=['POST'])      # Il metodo POST mi serve per visualizzare la pagina con la corretta risposta
 def verifica_risposta(livello_id):
     try: 
         livello = db.trova_livello(livello_id)
@@ -189,36 +188,24 @@ def verifica_risposta(livello_id):
 
 # =============== ROUTE STATO DI COMPLETAMENTO =========================
 
-@app.route("/api/livelli", methods=["GET"])
-def api_livelli():
-    livelli = db.ottieni_livelli() # ritorna la lista con _id come stringa
-
-    # Esempio: progressi utente 
-    utente_id = "demo"
-    progressi = db.ottieni_progressi_utente(utente_id)
-
-    # Se esiste un progresso per quel livello allora è completato
-    completati = set(p["livello_id"] for p in progressi)
-
-    livelli.sort(key=lambda x: x.get("numero_livello", 0))
-
-    prev_completato = True
-
-    for liv in livelli:
-        liv_id = liv["_id"]
-
-        liv["completato"] = (liv_id in completati)
-
-        # Sblocco progressivo
-        liv["sbloccato"] = prev_completato
-
-        prev_completato = liv["completato"]
-
-    return jsonify(livelli), 200
+@main.route('/api/livelli', methods=['GET'])
+def get_livelli_api():
+    try:
+        # Prendiamo i livelli dal database
+        livelli = db.ottieni_livelli()
+        
+        # Converte l'ObjectId di MongoDB in stringa per poterlo inviare come JSON
+        for liv in livelli:
+            if '_id' in liv:
+                liv['_id'] = str(liv['_id'])
+                
+        return jsonify(livelli), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # ============ ROUTE LIVELLO ====================
 
-@app.route('/livello/<int:numero>', methods=['GET'])
+@main.route('/livello/<int:numero>', methods=['GET'])
 def livello(numero):
     print("Route /livello chiamata con numero=", numero)
     livello = db.trova_livello_per_numero(numero)
@@ -239,7 +226,7 @@ def livello(numero):
 
 # =========== ROUTE AVANTI PER ID======================
 
-@app.route('/livello/<livello_id>/avanti', methods=['GET'])
+@main.route('/livello/<livello_id>/avanti', methods=['GET'])
 def livello_successivo(livello_id):
     # Trova livello corrente
     livello_corrente = db.trova_livello(livello_id)
@@ -258,33 +245,64 @@ def livello_successivo(livello_id):
     return render_template("esercizio_mimo.html", livello = prossimo_livello, contenuto = prossimo_livello.get("contenuto", {}))
 
 
-# ===== ROUTE PROGRESSI =====
+# ============= ROUTE AGGIORNA STATO ===================
+@main.route('/api/livello/aggiorna_stato', methods=['POST'])
+def aggiorna_stato_livello():
+    # Riceviamo i dati ricevuti da Javascript
+    dati = request.get_json()
 
-@app.route('/progressi/completa', methods = ['POST'])
+    livello_corrente = dati.get('livello_id')
+    livello_prossimo = dati.get('prossimo_id')                      # Questo valore può essere null se non esiste un livello successivo
+
+    try: 
+        # Chiamiamo il nostro Model per fare la query al database!
+        db.sblocca_e_completa_livello(livello_corrente, livello_prossimo)
+
+        # Rispondiamo al frontend che è andato tutto bene
+        return jsonify({"Success": True, "message": "Database aggiornato con successo."}), 200
+    except Exception as e:
+        return jsonify({"Success": False, "error": str(e)}), 500
+
+# =================== ROUTE PROGRESSI ===================
+
+@main.route('/progressi/completa', methods=['POST'])
 def completa_livello():
-    """Salva il completamento di un livello"""
+    data = request.json
+    # Usiamo .strip() per rimuovere eventuali spazi bianchi accidentali
+    livello_id = data.get('livello_id').strip()
+    
     try:
-        dati = request.get_json()
+        # 1. Recupera il livello attuale con controllo di esistenza
+        livello_attuale = db.livelli_collection.find_one({"_id": ObjectId(livello_id)})
+        
+        if livello_attuale is None:
+            print(f"ERRORE: Nessun livello trovato con ID {livello_id}")
+            return jsonify({"error": "Livello non trovato nel database"}), 404
 
-        stelle = db.salva_progresso(
-            utente_id = dati['utente_id'],
-            livello_id = dati['livello_id'],
-            punteggio = dati['punteggio'],
-            accuratezza = dati['accuratezza']
+        # 2. Segna il livello attuale come completato
+        db.livelli_collection.update_one(
+            {"_id": ObjectId(livello_id)},
+            {"$set": {"completato": True}}
         )
-
-        if stelle is not None:
-            return jsonify({
-                "message": "Progresso salvato",
-                "stelle": stelle
-            }), 200
-        else:
-            return jsonify({"error": "Livello non trovato"}), 404
+        
+        # 3. Sblocca il livello successivo (solo se esiste un numero_livello)
+        if 'numero_livello' in livello_attuale:
+            prossimo_numero = livello_attuale['numero_livello'] + 1
+            db.livelli_collection.update_one(
+                {"numero_livello": prossimo_numero},
+                {"$set": {"sbloccato": True}}
+            )
+            print(f"Livello {livello_attuale['numero_livello']} completato. Sbloccato il {prossimo_numero}.")
+        
+        return jsonify({"status": "success"}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 400    
-
-@app.route('/progressi/<utente_id>', methods = ['GET'])
+        print(f"ERRORE CRITICO in completa_livello: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+            
+            
+# ====================== ROUTE UTENTE ========================
+@main.route('/progressi/<utente_id>', methods = ['GET'])
 def get_progressi(utente_id):
     try: 
         progressi = db.ottieni_progressi_utente(utente_id)
@@ -293,12 +311,8 @@ def get_progressi(utente_id):
         return jsonify({"error": str(e)}), 400
     
 
-# ===== AVVIO SERVER =====
+# =============== ROUTE PROVA ================
+@main.route('/test_prova')
+def test_prova():
+    return "La route funziona", 200
 
-if __name__ == '__main__':
-    print("=" * 50)
-    print(" SERVER AVVIATO ")
-    print("=" * 50)
-    print(" URL: http//localhost:500")
-    print("=" * 50)
-    app.run(debug=True, port=500)
