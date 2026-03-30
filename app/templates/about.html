@@ -1,4 +1,71 @@
-<main>
-  <h1>Chi siamo</h1>
-  <p>Siamo un team dedicato a creare soluzioni web pulite e performanti.</p>
-</main>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Info - LabDuo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <img src="/static/images/Logo_LabDuo.png" alt="Logo">
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/">Home</a>
+                <a href="/about" class="active">Info</a>
+                <a href="/contact">Contatti</a>
+            </nav>
+        </aside>
+
+        <div class="content-wrapper">
+            <main class="about-main">
+                <div class="about-container">
+                    <header class="about-header">
+                        <h1>Cos'è LabDuo?</h1>
+                        <p>La tua palestra digitale per la lettura labiale.</p>
+                    </header>
+
+                    <div class="about-content">
+                        <div class="info-card">
+                            <div class="card-icon">🎯</div>
+                            <div class="card-text">
+                                <h3>La nostra missione</h3>
+                                <p>
+                                    LabDuo nasce per rendere l'apprendimento della lettura labiale accessibile, 
+                                    interattivo e divertente attraverso il gioco.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <div class="card-icon">🤖</div>
+                            <div class="card-text">
+                                <h3>Tecnologia LipNet</h3>
+                                <p>
+                                    Utilizziamo modelli di Intelligenza Artificiale per analizzare i movimenti delle labbra in tempo reale, 
+                                    offrendo un feedback immediato.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <div class="card-icon">🌍</div>
+                            <div class="card-text">
+                                <h3>Inclusività</h3>
+                                <p>
+                                    Uno strumento utile per chi vuole migliorare la percezione visiva del parlato o 
+                                    per chi affronta sfide uditive quotidiane.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div> 
+    </div> 
+
+</body>
+</html>

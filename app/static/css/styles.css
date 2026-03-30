@@ -2,11 +2,49 @@
 body { font-family: "Helvetica Neue", Arial, sans-serif; background: #f8f9fa; color: #2d2d2d; }
 .app-container { display: flex; min-height: 100vh; }
 
+/* Centratura Home */
+.home-main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 70vh;
+  text-align: center;
+  width: 100%;
+}
+
+#introduzione h1 {
+  font-size: 2.5rem;
+  color: #3c3c3c;
+  margin-bottom: 10px;
+}
+
+#introduzione p {
+  font-size: 1.2rem;
+  color: #777;
+  margin-bottom: 30px;
+}
+
+
 /* Sidebar Duolingo */
 .sidebar { width: 250px; background: #58cc02; color: white; padding-top: 2rem; position: fixed; top: 0; bottom: 0; left: 0; }
 .sidebar-logo img { width: 120px; margin: 0 auto; display: block; }
-.sidebar-nav a { color: white; text-decoration: none; padding: 1rem; text-align: center; display: block; transition: background 0.2s; }
-.sidebar-nav a:hover, .sidebar-nav a.active { background: rgba(255,255,255,0.3); }
+
+.sidebar-nav a { 
+  border-radius: 12px;
+  margin-bottom: 5px;
+  color: white; 
+  text-decoration: none; 
+  padding: 15px 20px; 
+  text-align: center; 
+  display: block; 
+  transition: background 0.2s; 
+}
+
+.sidebar-nav a:hover, .sidebar-nav a.active { 
+  background: rgba(255,255,255,0.3); 
+  font-weight: bold;
+}
 
 /* Progresso */
 .progress-container { position: fixed; top: 0; left: 250px; right: 0; height: 8px; background: #e0e0e0; z-index: 10; }
@@ -16,8 +54,25 @@ body { font-family: "Helvetica Neue", Arial, sans-serif; background: #f8f9fa; co
 .content-wrapper { margin-left: 250px; flex: 1; padding: 2rem; }
 main { max-width: 700px; margin: 0 auto; text-align: center; padding-top: 60px; }
 h1 { font-size: 42px; margin-bottom: 20px; }
-.start-button { background: #58cc02; color: white; border: none; padding: 18px 50px; font-size: 24px; font-weight: bold; border-radius: 50px; cursor: pointer; margin-top: 40px; box-shadow: 0 6px 20px rgba(88,204,2,0.4); transition: 0.2s; }
-.start-button:hover { transform: translateY(-4px); }
+
+.start-button { 
+  background: #58cc02; 
+  color: white; 
+  border: none; 
+  padding: 20px 40px; 
+  font-size: 22px; 
+  font-weight: bold; 
+  border-radius: 16px; 
+  cursor: pointer; 
+  margin-top: 40px; 
+  box-shadow: 0 4px 0 #6f6f6f; 
+  transition: all 0.1s; 
+}
+
+.start-button:hover { 
+  transform: translateY(2px); 
+  box-shadow: 0 2px 0 #6f6f6f;
+}
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -27,11 +82,168 @@ h1 { font-size: 42px; margin-bottom: 20px; }
   .progress-container { left: 0; }
 }
 
-/* Presentazione esercizio*/
+/* Presentazione esercizio */
 .exercise-card{
   background: grey;
   border-radius: 20px;
   padding: 24px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   margin-top: 18px;
+}
+
+.webcam-container{
+  position: relative;
+  width: fit-content;
+  margin: 20px auto;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 4px solid #58cc02;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.guida-labbra{
+  position: absolute;
+  top: 55%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 100px;
+  border: 2px dashed rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  pointer-events: none;
+  box-shadow: 0 0 0 500px rgba(0, 0, 0, 0.3);
+}
+
+#webcam{
+  display: block;
+  width: 640px;
+  height: 480px;
+  background: #222;
+  transform: scaleX(-1);
+}
+
+/* Container principale per dare respiro alla pagina dell'about */
+.about-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.about-header {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.about-header h1 {
+    color: #58cc02; /* Il tuo verde principale */
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.about-header p {
+    color: #777;
+    font-size: 1.2rem;
+}
+
+/* Stile delle Card informative */
+.info-card {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border: 2px solid #e5e5e5; /* Grigio chiaro Duolingo */
+    border-radius: 20px;
+    padding: 25px;
+    margin-bottom: 20px;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.info-card:hover {
+    border-color: #58cc02;
+    transform: translateY(-3px); /* Leggera elevazione al passaggio */
+}
+
+.card-icon {
+    font-size: 50px;
+    margin-right: 25px;
+    min-width: 60px;
+    text-align: center;
+}
+
+.card-text h3 {
+    margin: 0 0 8px 0;
+    color: #3c3c3c;
+    font-size: 1.4rem;
+}
+
+.card-text p {
+    margin: 0;
+    color: #666;
+    line-height: 1.5;
+}
+
+
+
+/* Stile per la pagina dei contatti */
+.contact-main{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+}
+
+.contact-card{
+   background: white;
+   border: 2px solid #e5e5e5;
+   border-radius: 24px;
+   padding: 50px 30px;
+   text-align: center;
+   max-width: 500px;
+   box-shadow: 0 4px 0 #e5e5e5;
+}
+
+.contact-card h1 {
+  color: #58cc02;
+  font-size: 2.5rem;
+  margin-bottom: 15px;
+}
+
+.contact-card p {
+  color: #4b4b4b;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 35px;
+}
+
+/* Bottone del GitHub */
+.github-btn{
+  display: inline-block;
+  background-color: #333;
+  color: white;
+  text-decoration: none;
+  padding: 18px 35px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-radius: 18px;
+  border-bottom: 5px solid #1a1a1a; /* Effetto 3D */
+  transition: all 0.1s;
+}
+
+.github-btn i{
+  margin-right: 10px; /* Spazio tra icona e testo */
+}
+
+.github-btn:hover {
+  background-color: #444;
+}
+
+.github-btn:active {
+  transform: translateY(4px);
+  border-bottom-width: 1px;
+}
+
+.footer-note {
+  margin-top: 40px;
+  color: #afafaf;
+  font-size: 0.9rem;
 }

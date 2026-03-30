@@ -1,5 +1,8 @@
 from flask import Blueprint, request, jsonify, render_template, abort
 from bson.objectid import ObjectId
+import os
+import cv2
+import numpy as np
 
 # Il mio nuovo file models.py è il mio vecchio database.py
 # ora rimanendo della stessa idea continuerò ad usare db per evitare che si rompa il codice
@@ -132,59 +135,115 @@ def get_livello(livello_id):
 
 @main.route('/livelli/<livello_id>/gioca', methods=['GET'])
 def gioca_livello(livello_id):
-    print(f"Debug: Flask ha ricevuto l'ID: '{livello_id}")
     try:
-        # Recupera il livello dal database (usa la funzione che hai in models.py)
         livello = db.ottieni_livello_per_id(livello_id) 
         
         if not livello:
-            print(f"Livello {livello_id} non trovato nel DB")
             return jsonify({"error": "Livello non trovato"}), 404
 
-        # Estraiamo i dati che servono al nostro JavaScript per costruire l'esercizio.
-        # ATTENZIONE: adatta le chiavi se nel tuo database si chiamano diversamente!
         contenuto = livello.get("contenuto", {})
         
+        # Costruiamo un oggetto base con i dati comuni
         dati_esercizio = {
+            "id": str(livello.get("_id")),
             "titolo": livello.get("titolo", f"Livello {livello.get('numero_livello')}"),
-            "testo": livello.get("testo", "Guarda il video e indovina la parola!"),
-            "video": contenuto.get("video", ""), 
-            "scelte": contenuto.get("scelte", [])
+            "testo": livello.get("testo", ""),
+            # Passiamo l'intero oggetto contenuto così il JS ha tutto (tipo, frase, video, scelte)
+            "contenuto": contenuto 
         }
         
-        # Rispondiamo con un JSON invece che con un render_template!
+        # Opzionale: aggiungiamo scorciatoie per comodità nel JS
+        dati_esercizio["tipo"] = contenuto.get("tipo")
+        dati_esercizio["video"] = contenuto.get("video", "")
+        dati_esercizio["scelte"] = contenuto.get("scelte", [])
+
         return jsonify(dati_esercizio), 200
         
     except Exception as e:
-        # Anche in caso di errore, rispondiamo in JSON così il browser non si blocca
         return jsonify({"error": str(e)}), 500
     
 # ================ ROUTE RIPOSTA CORRETTA =====================
 
-@main.route('/livelli/<livello_id>/verifica', methods=['POST'])      # Il metodo POST mi serve per visualizzare la pagina con la corretta risposta
+@main.route('/livelli/<livello_id>/verifica', methods=['POST'])
 def verifica_risposta(livello_id):
     try: 
-        livello = db.trova_livello(livello_id)
+        livello = db.ottieni_livello_per_id(livello_id) # Usa la stessa funzione di ottieni_livello
         if not livello:
             return jsonify({"error": "Livello non trovato"}), 404
         
         contenuto = livello.get("contenuto", {})
-        if not isinstance(contenuto, dict) or contenuto.get("tipo") != "mimo_labiale":
-            return jsonify({"error": "Contenuto livello non valido"}), 400
-
         dati = request.get_json()
-        scelta = dati.get("scelta")
+        scelta_utente = dati.get("scelta")
 
-        corretta = (scelta == contenuto.get("risposta"))
+        # Recuperiamo la risposta corretta dal database
+        # Assicurati che nel DB il campo si chiami "risposta_corretta" o "risposta"
+        risposta_corretta = contenuto.get("risposta_corretta") or contenuto.get("risposta")
+
+        # Debug per capire cosa stiamo confrontando
+        print(f"Utente ha scelto: {scelta_utente}, La corretta è: {risposta_corretta}")
+
+        corretta = (str(scelta_utente).strip().lower() == str(risposta_corretta).strip().lower())
 
         return jsonify({
             "corretta": corretta,
-            "risposta_corretta": contenuto.get("risposta", "")
+            "risposta_corretta": risposta_corretta
         }), 200
 
     except Exception as e:
+        print(f"Errore verifica: {e}")
         return jsonify({"error": str(e)}), 400
+    
 
+# =============== ROUTE ANALISI LIPNET ================================
+
+def elabora_video_per_lipnet(video_path):
+    # Apriamo il video salvato nella cartella uploads
+    cap = cv2.VideoCapture(video_path)
+    frames = []
+
+    # Lipnet spesso si aspetta un numero fisso di frame (esempio 75)
+    while len(frames) < 75:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        # 1 Conversione in scala di grigi (molti modelli usano solo il bianco e nero)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # 2 Ritaglio della zona centrale
+        bocca = gray[240:400, 220:420]
+
+        # 3 Ridimensionamento alle dimensioni del modello (100x50)
+        bocca_res = cv2.resize(bocca, (100, 50))
+
+        # 4 Normalizzazione (porta i valori dei pixel da 0-255 a 0-1)
+        bocca_norm = bocca_res / 255.0
+
+        frames.append(bocca_norm) 
+    cap.release()
+
+    # Trasformiamo la lista in un array NumPy pronto per l'IA
+    return np.array(frames)
+
+@main.route('/livelli/<livello_id>/analisi-lipnet', methods=['POST'])
+def analisi_lipnet(livello_id):
+    video_file = request.files.get('video')
+    frase_attesa = request.form.get('frase_attesa')
+
+    # Salva il file video temporaneamente
+    video_path = os.path.join("uploads", "temp_mimo.webm")
+    video_file.save(video_path)
+
+    # Trasformiamo il video in dati numerici
+    dati_per_ia = elabora_video_per_lipnet(video_path)
+
+    # Qui devo inserire il mio LipNet
+    # Esempio: trascrizione = tuo_modello_lipnet.predict(video_path)
+    trascrizione = frase_attesa # Da sostituire col vero risultato da matchare
+
+    successo = (trascrizione.lower().strip() == frase_attesa.lower().strip())
+
+    return jsonify({"success" : successo, "trascrizione" : trascrizione})
 
 # =============== ROUTE STATO DI COMPLETAMENTO =========================
 
@@ -246,6 +305,7 @@ def livello_successivo(livello_id):
 
 
 # ============= ROUTE AGGIORNA STATO ===================
+
 @main.route('/api/livello/aggiorna_stato', methods=['POST'])
 def aggiorna_stato_livello():
     # Riceviamo i dati ricevuti da Javascript
@@ -302,6 +362,7 @@ def completa_livello():
             
             
 # ====================== ROUTE UTENTE ========================
+
 @main.route('/progressi/<utente_id>', methods = ['GET'])
 def get_progressi(utente_id):
     try: 

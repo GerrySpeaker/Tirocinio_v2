@@ -6,7 +6,7 @@
     <title>Labiale Duo</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <style>
-        /* Griglia stile Duolingo */
+        /* Griglia stile Duolingo migliorata */
         .griglia-livelli {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
@@ -35,7 +35,6 @@
         .livello-box:hover:not(.locked) { transform: translateY(-8px) scale(1.05); }
         .lock-icon { position: absolute; font-size: 50px; opacity: 0.7; }
         
-        /* Stile per l'esercizio per evitare che sia tutto attaccato */
         #esercizio {
             text-align: center;
             margin-top: 50px;
@@ -46,6 +45,13 @@
         video {
             max-width: 100%;
             border-radius: 15px;
+            margin: 20px 0;
+        }
+        .choices-grid {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
             margin: 20px 0;
         }
     </style>
@@ -70,28 +76,31 @@
             </div>
 
             <main>
-                <div id = "introduzione">
-                    <h1>Impara a leggere le labbra</h1>
-                    <p style="margin:30px 0; font-size:18px;">Clicca sul bottone per iniziare il tuo percorso</p>
-                </div>
-                
-
+                <div id="schermata-benvenuto" class="home-main">
+                    <div id="introduzione">
+                        <h1>Impara a leggere le labbra</h1>
+                        <p style="margin:30px 0; font-size:18px;">Clicca sul bottone per iniziare il tuo percorso</p>
+                    </div>
+            
                 <div id="schermataIniziale">
                     <button class="start-button" onclick="mostraLivelli()">Inizia la lezione</button>
                 </div>
 
+                </div>
+                
                 <div id="listaLivelli" style="display:none; margin-top:50px;">
                     <h2 style="text-align:center; margin-bottom:40px; font-size:32px;">I tuoi livelli</h2>
                     <div class="griglia-livelli" id="elenco"></div> 
                 </div>
 
-                <div id="esercizio" style="display: none">
-                    </div>
+                <div id="esercizio" style="display: none"></div>
             </main>
-        </div> </div> 
-        <script>
+        </div> 
+    </div> 
+
+<script>
     async function mostraLivelli() {
-        document.getElementById('schermataIniziale').style.display = 'none';
+        document.getElementById('schermata-benvenuto').style.display = 'none';
         document.getElementById('listaLivelli').style.display = 'block';
         await generaGriglia();
     }
@@ -99,21 +108,24 @@
     async function generaGriglia() {
         const elenco = document.getElementById("elenco");
         elenco.innerHTML = "Caricamento in corso...";
-        let TOTALE_LIVELLI = 0;
-        let livelliCompletati = 0;
-
+        
         try {
             const res = await fetch("/api/livelli?t=" + new Date().getTime());
-            const livelli = await res.json();
-            elenco.innerHTML = ""; 
+            let livelli = await res.json();
+            
+            // ORDINAMENTO FORZATO LATO CLIENT: 1, 2, 3, 4...
+            livelli.sort((a, b) => a.numero_livello - b.numero_livello);
 
-            if (livelli.length === 0) {
+            elenco.innerHTML = ""; 
+            let TOTALE_LIVELLI = livelli.length;
+            let livelliCompletati = 0;
+
+            if (TOTALE_LIVELLI === 0) {
                 elenco.innerHTML = "<p style='color: white; font-size: 20px;'>Nessun livello trovato.</p>";
                 return;
             }
 
             livelli.forEach(liv => {
-                TOTALE_LIVELLI++;
                 const box = document.createElement("div");
                 box.className = "livello-box";
                 box.setAttribute('data-livello-id', liv._id);
@@ -135,7 +147,7 @@
                 elenco.appendChild(box);
             });
 
-            const perc = TOTALE_LIVELLI > 0 ? (livelliCompletati / TOTALE_LIVELLI) * 100 : 0;
+            const perc = (livelliCompletati / TOTALE_LIVELLI) * 100;
             document.getElementById("barra").style.width = perc + "%";
             
             attivaClickLivelli();
@@ -146,73 +158,219 @@
     }
 
     function attivaClickLivelli() {
-        document.querySelectorAll('.livello-box:not(.locked)').forEach(livello => {
-            livello.addEventListener('click', () => {
-                const livelloId = livello.getAttribute('data-livello-id');
-                
-                fetch(`/livelli/${livelloId}/gioca`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const esercizioEl = document.getElementById("esercizio");
-                        esercizioEl.innerHTML = `
-                        <div class = "esercizio-container" style="text-align:center;">
-                            <h2>${data.titolo}</h2>
-                            <p>${data.testo}</p>
-                            <video src="${data.video}" controls></video>
-                            <div class="choices-grid">
-                                ${data.scelte.map(choice => 
-                                    // Usiamo JSON.stringify per passare la stringa in modo sicuro
-                                    `<button class="start-button" onclick='verificaRisposta("${livelloId}", "${choice}")'>${choice}</button>`
-                                ).join('')}
+    document.querySelectorAll('.livello-box:not(.locked)').forEach(livello => {
+        livello.addEventListener('click', () => {
+            const livelloId = livello.getAttribute('data-livello-id');
+            
+            fetch(`/livelli/${livelloId}/gioca`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("CHIAVI DISPONIBILI:", Object.keys(data));
+                    const esercizioEl = document.getElementById("esercizio");
+                    const videoUrl = data.video || data.video_url || "";
+                    const scelte = data.scelte || data.opzioni || [];
+                    const deveEssereBloccato = scelte.length > 0;
+
+                    // --- LOGICA DI SEPARAZIONE ---
+                    if (data.contenuto && data.contenuto.tipo === "mimo_labiale") {
+    
+                    // 2. Recuperiamo la frase (assumendo si chiami 'frase' o simile dentro contenuto)
+                    // Se nel DB il campo si chiama 'testo', cambia .frase_da_mimare in .testo
+                    const fraseDaMostrare = data.contenuto.testo || "Testo non trovato";
+
+                    esercizioEl.innerHTML = `
+                        <div class="esercizio-container">
+                            <h2 style="color: #58cc02;">Mima questa parola:</h2>
+                            <h1 style="font-size: 48px; margin-bottom: 20px;">"${fraseDaMostrare}"</h1>
+                            
+                            <div class="webcam-container">
+                                <video id="webcam" autoplay muted playsinline></video>
+                                <div class="guida-labbra"></div>
                             </div>
-                            <div id="risultato-esercizio" style="margin-top:20px; font-weight:bold; font-size:24px;"></div>
-                                <div style="margin-top: 30px; display: flex; justify-content: center; gap: 20px;">
-                                    
-                                    <button class="back-btn" onclick="window.location.href='/'" 
-                                    style = " 
-                                    background: #58cc02;
-                                    color: white;
-                                    border: none;
-                                    border-radius: 999px;
-                                    padding: 14px 26px;
-                                    font-size: 18px;
-                                    font-weight: 800;
-                                    cursor: pointer;
-                                    box-shadow: 0 6px 18px rgba(88,204,2,0.4);
-                                    transition: transform 0.2s;"> 
-                                    ← Torna ai livelli 
-                                    </button>
 
-                                    <button id= "btn-avanti-sempre"
-                                    style = " 
-                                    background: #58cc02;
-                                    color: white;
-                                    border: none;
-                                    border-radius: 999px;
-                                    padding: 14px 26px;
-                                    font-size: 18px;
-                                    font-weight: 800;
-                                    cursor: pointer;
-                                    box-shadow: 0 6px 18px rgba(88,204,2,0.4);
-                                    transition: transform 0.2s;"
-                                    onclick="completaESblocca('${livelloId}')">
-                                    Avanti → 
-                                    </button>
-
-                                </div>
+                            <div id="risultato-esercizio" style="margin-top:20px; font-weight:bold; font-size:24px; min-height:40px;"></div>
+                            
+                            <div style="margin-top: 30px; display: flex; justify-content: center; gap: 20px;">
+                                <button id="btn-registra" class="btn-nav-avanti" style="background: #ff4b4b; color:white; border:none; border-radius:999px; padding:14px 26px; cursor:pointer;" 
+                                        onclick="gestisciRegistrazione('${livelloId}', '${fraseDaMostrare}')">
+                                    Registra Mimo
+                                </button>
+                                <button id="btn-avanti-sempre" class="btn-nav-avanti disabilitato" disabled 
+                                        style="background: #58cc02; color:white; border:none; border-radius:999px; padding:14px 26px;"
+                                        onclick="completaESblocca('${livelloId}')">
+                                    Avanti →
+                                </button>
+                            </div>
                         </div>
                     `;
-                        document.getElementById('introduzione').style.display = 'none';
-                        document.getElementById('listaLivelli').style.display = 'none';
-                        esercizioEl.style.display = 'block';
-                    })
-                    .catch(error => console.error("Errore API:", error));
+                    
+                    // Importante: avvia la webcam
+                    setTimeout(avviaWebcam, 100);
+
+                    } else {
+                        // MODO STANDARD (Capire Labiale)
+                        esercizioEl.innerHTML = `
+                            <div class="esercizio-container">
+                                <h2>${data.titolo}</h2>
+                                <p>${data.testo}</p>
+                                <video src="${videoUrl}" controls></video>
+                                <div class="choices-grid">
+                                    ${scelte.map(choice => 
+                                        `<button class="start-button" onclick='verificaRisposta("${livelloId}", "${choice}")'>${choice}</button>`
+                                    ).join('')}
+                                </div>
+                                <div id="risultato-esercizio" style="margin-top:20px; font-weight:bold; font-size:24px; min-height:40px;"></div>
+                                <div style="margin-top: 30px; display: flex; justify-content: center; gap: 20px;">
+                                    <button onclick="window.location.reload()" 
+                                            style="background: #ccc; color: #333; border: none; border-radius: 999px; padding: 14px 26px; font-size: 18px; font-weight: 800; cursor: pointer;">
+                                        ← Torna ai livelli
+                                    </button>
+                                    <button id="btn-avanti-sempre"
+                                            class="${deveEssereBloccato ? 'disabilitato': ''}"
+                                            ${deveEssereBloccato ? 'disabled': ''} 
+                                            style="background: #58cc02; color: white; border: none; border-radius: 999px; padding: 14px 26px; font-size: 18px; font-weight: 800; cursor: pointer; box-shadow: 0 6px 18px rgba(88,204,2,0.4);"
+                                            onclick="completaESblocca('${livelloId}')">
+                                        Avanti →
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // Questi devono essere fuori dall'if/else perché servono a entrambi
+                    document.getElementById('introduzione').style.display = 'none';
+                    document.getElementById('listaLivelli').style.display = 'none';
+                    esercizioEl.style.display = 'block';
+                });
             });
         });
     }
-        
 
-    function completaESblocca(livelloId){
+    async function avviaWebcam() {
+        const video = document.getElementById('webcam');
+
+        // Verifichiamo che l'elemento esista nel DOM
+        if(!video){
+            console.error("Elemento webcam non trovato.");
+            return;
+        }
+
+        try{
+            // Richiediamo accesso solo al video
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: 640,
+                    height: 480,
+                    facingMode: "user" // Usa la fotocamera sui dispositivi mobili
+                },
+                audio: false
+            });
+
+            video.srcObject = stream;
+            console.log("Webcam avviata con successo");
+        } catch (err) {
+            console.log("Errore nell'accesso alla webcam", err);
+            alert("Per favore, consenti l'accesso alla webcam per eseguire l'esercizio");
+        }
+    }
+
+    let mediaRecorder;
+    let recordedChunks = [];
+
+    function gestisciRegistrazione(livelloId, fraseTarget){
+        const btn = document.getElementById('btn-registra');
+        const statusDiv = document.getElementById('risultato-esercizio');
+
+        if(!mediaRecorder || mediaRecorder.state === "inactive"){
+            // -- Inizio registrazione --
+            recordedChunks = [];
+            const stream = document.getElementById('webcam').srcObject;
+
+            // Specifico il formato video (webm è lo standard per i browser)
+            mediaRecorder = new MediaRecorder(stream, {mimeType: 'video/webm'});
+
+            mediaRecorder.ondataavailable = (event) => {
+                if(event.data.size > 0) recordedChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                console.log("Registrazione terminata, invio al server...");
+                inviaVideoALipnet(livelloId, fraseTarget);
+            };
+
+            mediaRecorder.start();
+            btn.innerHTML = "Ferma e analizza";
+            btn.style.background = "#222";
+            statusDiv.style.color = "red";
+            statusDiv.innerText = "🔴 Sto registrando i movimenti della tua bocca...";
+        } else {
+            // -- Fine registrazione --
+            mediaRecorder.stop();
+            btn.innerText = "Registra Mimo";
+            btn.style.background = "#ff4b4b";
+            statusDiv.style.color = "#ffb400";
+            statusDiv.innerText = "⏳ Analisi in corso con LipNet...";
+        }
+    }
+
+    async function inviaVideoALipnet(livelloId, fraseTarget) {
+        const blob = new Blob(recordedChunks, {type: 'video/webm'});
+        const formData = new FormData();
+        formData.append('video', blob);
+        formData.append('frase_attesa', fraseTarget);
+
+        try{
+            const response = await fetch(`/livelli/${livelloId}/analisi-lipnet`, {
+                method : "POST",
+                body : formData
+            });
+
+            const result = await response.json();
+            const statusDiv = document.getElementById('risultato-esercizio');
+            const btnAvanti = document.getElementById('btn-avanti-sempre');
+
+            if(result.success){
+                statusDiv.style.color = "#58cc02";
+                statusDiv.innerHTML = `Esatto! Hai detto <strong>"${result.trascrizione}"</strong>🎉`;
+                btnAvanti.classList.remove('disabilitato');
+                btnAvanti.disabled = false;
+            } else {
+                statusDiv.style.color = "#ff4b4b";
+                statusDiv.innerText = `Ho capito "${result.trascrizione}". Riprova a scandire meglio`;
+            }
+        } catch (error) {
+            console.error("Errore invio del video", error);
+            alert("Error durante l'analisi del video.");
+        }
+    }
+
+    function verificaRisposta(livelloId, sceltaUtente) {
+    fetch(`/livelli/${livelloId}/verifica`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scelta: sceltaUtente })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const divRisultato = document.getElementById('risultato-esercizio');
+        const btnAvanti = document.getElementById('btn-avanti-sempre');
+
+        if (data.corretta) {
+            divRisultato.style.color = "#58cc02";
+            divRisultato.innerHTML = "Risposta Corretta! 🎉";
+            
+            // SBLOCCHIAMO IL TASTO AVANTI
+            btnAvanti.classList.remove('disabilitato');
+            btnAvanti.disabled = false;
+            btnAvanti.style.transform = "scale(1.05)"; // Piccolo feedback visivo
+        } else {
+            divRisultato.style.color = "#ff4b4b";
+            divRisultato.innerHTML = "Sbagliato, riprova!";
+        }
+    });
+}
+
+    function completaESblocca(livelloId) {
         fetch('/progressi/completa', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -225,87 +383,9 @@
         .then(data => {
             if (data.status === "success") {
                 window.location.reload();
-            } else {
-                console.error("Errore nel salvataggio:", data.error);
             }
-        })
-        .catch(err => console.error("Errore di rete:", err));
+        });
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-    function verificaRisposta(livelloId, sceltaUtente) {
-
-    console.log("DEBUG: Funzione verificaRisposta chiamata!");
-    console.log("ID ricebuto:", livelloId);
-    console.log("Scelta:", sceltaUtente);
-
-    fetch(`/livelli/${livelloId}/verifica`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scelta: sceltaUtente })
-    })
-    .then(response => response.json())
-    .then(data => {
-        const divRisultato = document.getElementById('risultato-esercizio');
-        if (data.corretta) {
-            divRisultato.style.color = "#58cc02";
-            divRisultato.innerHTML = "Risposta Corretta! 🎉";
-
-            // Se il tasto avanti non esiste già, crealo
-            if (!document.getElementById('btn-avanti')) {
-                const btnAvanti = document.createElement('button');
-                btnAvanti.id = 'btn-avanti';
-                btnAvanti.innerHTML = "Avanti ➔";
-                
-                // Applichiamo il tuo stile (puoi usare una classe CSS se preferisci)
-                btnAvanti.style = `
-                    background: #58cc02;
-                    color: white;
-                    border: none;
-                    border-radius: 999px;
-                    padding: 14px 26px;
-                    font-size: 18px;
-                    font-weight: 800;
-                    cursor: pointer;
-                    margin-top: 20px;
-                    box-shadow: 0 6px 18px rgba(88,204,2,0.4);
-                `;
-
-                // Quando clicca Avanti, salva nel DB e torna alla home
-                btnAvanti.onclick = () => {
-                    fetch('/progressi/completa', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            utente_id: "demo", 
-                            livello_id: livelloId,
-                            punteggio: 100,
-                            accuratezza: 100
-                        })
-                    }).then(() => {
-                        window.location.reload(); // Ricarica per vedere il livello verde e la barra avanzata
-                    });
-                };
-
-                divRisultato.after(btnAvanti);
-            }
-        } else {
-            divRisultato.style.color = "#ff4b4b";
-            divRisultato.innerHTML = "Sbagliato, riprova!";
-        }
-    });
-}
 </script>
 </body>
 </html>

@@ -128,6 +128,14 @@ body {
   transition: transform 0.2s;
 }
 
+.next-btn-always.disabled {
+  background: #e5e5e5 !important;
+  color: #afafaf !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
 .disable-btn {
   background: #ccbf02;
   color: white;
