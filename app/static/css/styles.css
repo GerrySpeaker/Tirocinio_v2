@@ -28,7 +28,7 @@ body { font-family: "Helvetica Neue", Arial, sans-serif; background: #f8f9fa; co
 
 /* Sidebar Duolingo */
 .sidebar { width: 250px; background: #58cc02; color: white; padding-top: 2rem; position: fixed; top: 0; bottom: 0; left: 0; }
-.sidebar-logo img { width: 120px; margin: 0 auto; display: block; }
+.sidebar-logo img { width: 180px; margin: 0 auto; display: block; }
 
 .sidebar-nav a { 
   border-radius: 12px;
