@@ -27,7 +27,17 @@ body { font-family: "Helvetica Neue", Arial, sans-serif; background: #f8f9fa; co
 
 
 /* Sidebar Duolingo */
-.sidebar { width: 250px; background: #58cc02; color: white; padding-top: 2rem; position: fixed; top: 0; bottom: 0; left: 0; }
+.sidebar { 
+  width: 250px; 
+  background: #58cc02; 
+  color: white; 
+  padding-top: 2rem; 
+  position: fixed; 
+  top: 0; 
+  bottom: 0; 
+  left: 0; 
+  z-index: 100;
+}
 .sidebar-logo img { width: 180px; margin: 0 auto; display: block; }
 
 .sidebar-nav a { 
@@ -51,7 +61,13 @@ body { font-family: "Helvetica Neue", Arial, sans-serif; background: #f8f9fa; co
 .progress-bar { height: 100%; background: #58cc02; width: 0%; transition: width 0.4s; }
 
 /* Contenuto */
-.content-wrapper { margin-left: 250px; flex: 1; padding: 2rem; }
+.content-wrapper { 
+  margin-left: 250px;  /* Lascia lo spazio per la sidebar */
+  width: calc(100% - 250px);
+  display: flex;
+  justify-content: center;  /* Centra orizzontalmente il contenuto */
+}
+
 main { max-width: 700px; margin: 0 auto; text-align: center; padding-top: 60px; }
 h1 { font-size: 42px; margin-bottom: 20px; }
 
@@ -124,10 +140,10 @@ h1 { font-size: 42px; margin-bottom: 20px; }
 
 /* Container principale per dare respiro alla pagina dell'about */
 .about-container {
+    width: 100%;
     max-width: 800px;
     margin: 0 auto;
-    padding: 40px 20px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding-top: 40px;
 }
 
 .about-header {
@@ -155,6 +171,7 @@ h1 { font-size: 42px; margin-bottom: 20px; }
     border-radius: 20px;
     padding: 25px;
     margin-bottom: 20px;
+    width: 100;
     transition: transform 0.2s, border-color 0.2s;
 }
 
@@ -246,4 +263,44 @@ h1 { font-size: 42px; margin-bottom: 20px; }
   margin-top: 40px;
   color: #afafaf;
   font-size: 0.9rem;
+}
+
+/* Per le pagine di about e contact */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100px;
+  }
+
+  .sidebar-logo img {
+    width: 70px;
+  }
+
+  .sidebar-nav a {
+    font-size: 12px;
+    text-align: center;
+    padding: 10px 5px;
+  }
+
+  /* Modifiche solamente per about e contact */
+  .about-main, .contact-main {
+    padding-top: 20px;
+    align-items: flex-start;
+  }
+
+  .about-container, .contact-card {
+    width: 100px;
+    max-width: 100%;
+    margin: auto;
+  }
+
+  .info-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .card-icon{
+    margin-right: 0;
+    margin-bottom: 15px;
+  }
 }
