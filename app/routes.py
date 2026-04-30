@@ -3,6 +3,9 @@ from bson.objectid import ObjectId
 import os
 import cv2
 import numpy as np
+from Levenshtein import ratio
+from jiwer import cer, wer
+
 
 # Il mio nuovo file models.py è il mio vecchio database.py
 # ora rimanendo della stessa idea continuerò ad usare db per evitare che si rompa il codice
@@ -227,23 +230,40 @@ def elabora_video_per_lipnet(video_path):
 
 @main.route('/livelli/<livello_id>/analisi-lipnet', methods=['POST'])
 def analisi_lipnet(livello_id):
-    video_file = request.files.get('video')
-    frase_attesa = request.form.get('frase_attesa')
+    try:
+        video_file = request.files.get('video')
+        frase_attesa = request.form.get('frase_attesa')
 
-    # Salva il file video temporaneamente
-    video_path = os.path.join("uploads", "temp_mimo.webm")
-    video_file.save(video_path)
+        if not video_file:
+            return jsonify({"success": False, "error": "File video non ricevuto"}), 400
 
-    # Trasformiamo il video in dati numerici
-    dati_per_ia = elabora_video_per_lipnet(video_path)
+        # Salvataggio
+        video_path = os.path.join("uploads", "temp_mimo.mp4")
+        video_file.save(video_path)
 
-    # Qui devo inserire il mio LipNet
-    # Esempio: trascrizione = tuo_modello_lipnet.predict(video_path)
-    trascrizione = frase_attesa # Da sostituire col vero risultato da matchare
+        # Elaborazione
+        dati_per_ia = elabora_video_per_lipnet(video_path)
+        
+        # Controllo se l'elaborazione ha prodotto dati
+        if dati_per_ia is None or len(dati_per_ia) == 0:
+            return jsonify({"success": False, "error": "Impossibile elaborare i frame del video"}), 400
 
-    successo = (trascrizione.lower().strip() == frase_attesa.lower().strip())
+        # Simulazione Trascrizione (Placeholder per il futuro modello)
+        trascrizione = frase_attesa 
 
-    return jsonify({"success" : successo, "trascrizione" : trascrizione})
+        successo = (trascrizione.lower().strip() == frase_attesa.lower().strip())
+
+        # RITORNO VALIDO
+        return jsonify({
+            "success": successo, 
+            "trascrizione": trascrizione,
+            "message": "Analisi completata"
+        })
+
+    except Exception as e:
+        # In caso di qualsiasi errore (DB spento, file mancante, ecc.)
+        print(f"Errore durante l'analisi: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 # =============== ROUTE STATO DI COMPLETAMENTO =========================
 
