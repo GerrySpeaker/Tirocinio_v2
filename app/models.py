@@ -208,6 +208,39 @@ def ottieni_livello_per_id(livello_id):
         print("Errore nel trovare il livello: {e}")
         return None
 
+# --- CER e WER ---
+
+def _levenshtein(seq1, seq2):
+    """Distanza di Levenshtein generica su sequenze (liste o stringhe)."""
+    n, m = len(seq1), len(seq2)
+    # matrice (n+1) x (m+1)
+    dp = list(range(m + 1))
+    for i in range(1, n + 1):
+        prev, dp[0] = dp[0], i
+        for j in range(1, m + 1):
+            temp = dp[j]
+            if seq1[i - 1] == seq2[j - 1]:
+                dp[j] = prev
+            else:
+                dp[j] = 1 + min(prev, dp[j], dp[j - 1])
+            prev = temp
+    return dp[m]
+
+
+def calcola_cer(reference: str, hypothesis: str) -> float:
+    """Character Error Rate — distanza a livello di caratteri."""
+    if len(reference) == 0:
+        return 0.0 if len(hypothesis) == 0 else 1.0
+    return _levenshtein(reference, hypothesis) / len(reference)
+
+
+def calcola_wer(reference: str, hypothesis: str) -> float:
+    """Word Error Rate — distanza a livello di parole."""
+    ref_words = reference.split()
+    hyp_words = hypothesis.split()
+    if len(ref_words) == 0:
+        return 0.0 if len(hyp_words) == 0 else 1.0
+    return _levenshtein(ref_words, hyp_words) / len(ref_words)
 
 
 # Test connessione all'avvio

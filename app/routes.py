@@ -243,27 +243,39 @@ def analisi_lipnet(livello_id):
 
         # Elaborazione
         dati_per_ia = elabora_video_per_lipnet(video_path)
-        
+
         # Controllo se l'elaborazione ha prodotto dati
         if dati_per_ia is None or len(dati_per_ia) == 0:
             return jsonify({"success": False, "error": "Impossibile elaborare i frame del video"}), 400
 
-        # Simulazione Trascrizione (Placeholder per il futuro modello)
-        trascrizione = frase_attesa 
+        # Trascrizione reale (o placeholder)
+        trascrizione = frase_attesa  # sostituire con il vero output del modello
 
-        successo = (trascrizione.lower().strip() == frase_attesa.lower().strip())
+        # ── NUOVO: normalizzazione ──────────────────────────────────────────
+        ref = frase_attesa.lower().strip()
+        hyp = trascrizione.lower().strip()
+
+        # ── NUOVO: calcolo CER e WER ────────────────────────────────────────
+        cer = db.calcola_cer(ref, hyp)
+        wer = db.calcola_wer(ref, hyp)
+
+        # successo se WER == 0 (corrispondenza perfetta) oppure sotto soglia
+        successo = wer == 0.0
 
         # RITORNO VALIDO
         return jsonify({
-            "success": successo, 
+            "success": successo,
             "trascrizione": trascrizione,
-            "message": "Analisi completata"
+            "message": "Analisi completata",
+            "cer": round(cer, 4),        # ── NUOVO
+            "wer": round(wer, 4),        # ── NUOVO
+            "cer_percent": round(cer * 100, 2),   # ── NUOVO  (leggibilità)
+            "wer_percent": round(wer * 100, 2),   # ── NUOVO
         })
-
     except Exception as e:
-        # In caso di qualsiasi errore (DB spento, file mancante, ecc.)
-        print(f"Errore durante l'analisi: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+    
+    # successo = (trascrizione.lower().strip() == frase_attesa.lower().strip())
 
 # =============== ROUTE STATO DI COMPLETAMENTO =========================
 
