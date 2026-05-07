@@ -1,4 +1,8 @@
 # database.py
+import random
+
+import cv2
+import numpy as np
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from datetime import datetime
@@ -241,6 +245,127 @@ def calcola_wer(reference: str, hypothesis: str) -> float:
     if len(ref_words) == 0:
         return 0.0 if len(hyp_words) == 0 else 1.0
     return _levenshtein(ref_words, hyp_words) / len(ref_words)
+
+def mock_lipnet_trascrizione(frase_attesa: str, modalita: str = "realistica") -> str: 
+    """
+    Simula l'output di LipNet con errori controllati.
+
+    modalita: 
+      - "perfetta"   -> nessun errore (WER = 0, CER = 0)
+      - "realistica" -> errori tipici del lip reading (circa 20-40% WER)
+      - "pessima"    -> molti errori (stress test)
+      - "vuota"      -> stringa vuota (caso estremo)
+    """
+
+    if modalita == "perfetta":
+        return frase_attesa
+    
+    if modalita == "vuota":
+        return ""
+    
+    parole = frase_attesa.lower().strip().split()
+
+    if modalita == "pessima":
+        # Sostituisce tutte le parole con il placeholder
+        return " ".join(["***"] * len(parole))
+    
+    # modalita REALISTICA --------------------
+    # Errori tipici del lipreading reale:
+    # Confusione tra i fonemi visivamente simili (p/b, m/n, f/v)
+    # Parole brevi spesso saltate
+    # Inversione di parole vicine
+
+    SOSTITUZIONI_FONETICHE = {
+        "b": "p", "p": "b",
+        "m": "n", "n": "m",
+        "f": "v", "v": "f",
+        "d": "t", "t": "d",
+    }
+
+    risultato = []
+    for parola in parole:
+        r = random.random()
+
+        if r < 0.10 and len(parola) <= 3:
+            # Parole corte -> spesso eliminate (10%)
+            continue
+        elif r < 0.20:
+            # Sostituzione fonetica sul primo carattere (10%)
+            primo = parola[0]
+            nuovo = SOSTITUZIONI_FONETICHE.get(primo, primo)
+            risultato.append(nuovo + parola[1:])
+        elif r < 0.25:
+            # Troncamneto (5%) - es. "ciao" -> "cia"
+            risultato.append(parola[:-1] if len(parola) > 2 else parola)
+        else:
+            # Parola corretta
+            risultato.append(parola)
+
+    return " ".join(risultato)
+
+# =============== ROUTE ANALISI LIPNET ================================
+
+def elabora_video_per_lipnet(video_path):
+    # Apriamo il video salvato nella cartella uploads
+    cap = cv2.VideoCapture(video_path)
+    frames = []
+
+    # Lipnet spesso si aspetta un numero fisso di frame (esempio 75)
+    while len(frames) < 75:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        # 1 Conversione in scala di grigi (molti modelli usano solo il bianco e nero)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # 2 Ritaglio della zona centrale
+        bocca = gray[240:400, 220:420]
+
+        # 3 Ridimensionamento alle dimensioni del modello (100x50)
+        bocca_res = cv2.resize(bocca, (100, 50))
+
+        # 4 Normalizzazione (porta i valori dei pixel da 0-255 a 0-1)
+        bocca_norm = bocca_res / 255.0
+
+        frames.append(bocca_norm) 
+    cap.release()
+
+    # Trasformiamo la lista in un array NumPy pronto per l'IA
+    return np.array(frames)
+
+def trascrivi_video(video_path: str, frase_attesa: str) -> dict:
+    """
+    Funzione principale - black box completa.
+    Oggi: mock
+    Domani: LipNet reale
+    """
+    dati_per_ia = elabora_video_per_lipnet(video_path)
+
+    if dati_per_ia is None or len(dati_per_ia) == 0:
+        return {"success": False, "error": "Frame non estratti"}
+    
+    # Aggiungo questo al momento per effettuare il mock visto che non ho il modello IA
+    trascrizione = mock_lipnet_trascrizione(frase_attesa, modalita="realistica")
+
+    # Aggiungo richiami di funzione per i controlli e ottenimento dati
+    ref = frase_attesa.lower().strip()
+    hyp = trascrizione.lower().strip()
+    cer = calcola_cer(ref, hyp)     # ref = reference
+    wer = calcola_wer(ref, hyp)     # hyp = hypotesis
+
+    # Confronto con il DB
+    livello_superato = wer <= 0.25 # Soglia configurabile
+
+    return {
+        "trascrizione": trascrizione,
+        "livello_superato": livello_superato,
+        "metriche": {
+            "wer_percent": round(wer * 100, 2),
+            "cer_percent": round(cer * 100, 2),
+        },
+        "mock_attivo": True # Diventa false quando LipNet è reale
+    }
 
 
 # Test connessione all'avvio

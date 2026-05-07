@@ -3,9 +3,6 @@ from bson.objectid import ObjectId
 import os
 import cv2
 import numpy as np
-from Levenshtein import ratio
-from jiwer import cer, wer
-
 
 # Il mio nuovo file models.py è il mio vecchio database.py
 # ora rimanendo della stessa idea continuerò ad usare db per evitare che si rompa il codice
@@ -196,38 +193,7 @@ def verifica_risposta(livello_id):
         print(f"Errore verifica: {e}")
         return jsonify({"error": str(e)}), 400
     
-
-# =============== ROUTE ANALISI LIPNET ================================
-
-def elabora_video_per_lipnet(video_path):
-    # Apriamo il video salvato nella cartella uploads
-    cap = cv2.VideoCapture(video_path)
-    frames = []
-
-    # Lipnet spesso si aspetta un numero fisso di frame (esempio 75)
-    while len(frames) < 75:
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        # 1 Conversione in scala di grigi (molti modelli usano solo il bianco e nero)
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-        # 2 Ritaglio della zona centrale
-        bocca = gray[240:400, 220:420]
-
-        # 3 Ridimensionamento alle dimensioni del modello (100x50)
-        bocca_res = cv2.resize(bocca, (100, 50))
-
-        # 4 Normalizzazione (porta i valori dei pixel da 0-255 a 0-1)
-        bocca_norm = bocca_res / 255.0
-
-        frames.append(bocca_norm) 
-    cap.release()
-
-    # Trasformiamo la lista in un array NumPy pronto per l'IA
-    return np.array(frames)
-
+"""
 @main.route('/livelli/<livello_id>/analisi-lipnet', methods=['POST'])
 def analisi_lipnet(livello_id):
     try:
@@ -276,6 +242,59 @@ def analisi_lipnet(livello_id):
         return jsonify({"success": False, "error": str(e)}), 500
     
     # successo = (trascrizione.lower().strip() == frase_attesa.lower().strip())
+"""
+# =============== ROUTE ANALISI LIPNET ================================
+
+@main.route('/livelli/<livello_id>/analisi-lipnet', methods=['POST'])
+def analisi_lipnet(livello_id):
+    try:
+        video_file = request.files.get('video')
+        frase_attesa = request.form.get('frase_attesa')
+        modalita_mock = request.form.get('modalita_mock', 'realistica')
+
+        if not video_file:
+            return jsonify({"success": False, "error": "File video non ricevuto"}), 400
+
+        video_path = os.path.join("uploads", "temp_mimo.mp4")
+        video_file.save(video_path)
+
+        # STEP 1 — elaborazione frame
+        dati_per_ia = db.elabora_video_per_lipnet(video_path)
+
+        if dati_per_ia is None or len(dati_per_ia) == 0:
+            return jsonify({"success": False, "error": "Impossibile elaborare i frame del video"}), 400
+
+        # STEP 2 — trascrizione (mock oggi, LipNet domani)
+        # FUTURO: trascrizione = modello_lipnet.predici(dati_per_ia)
+        trascrizione = db.mock_lipnet_trascrizione(frase_attesa, modalita=modalita_mock)
+
+        # STEP 3 — metriche
+        ref = frase_attesa.lower().strip()
+        hyp = trascrizione.lower().strip()
+        cer_val = db.calcola_cer(ref, hyp)
+        wer_val = db.calcola_wer(ref, hyp)
+
+        # STEP 4 — soglia configurabile
+        SOGLIA_WER = float(request.form.get('soglia_wer', 0.25))
+        successo = wer_val <= SOGLIA_WER
+
+        return jsonify({
+            "success": successo,
+            "trascrizione": trascrizione,
+            "frase_attesa": frase_attesa,
+            "message": "Analisi completata",
+            "metriche": {
+                "cer": round(cer_val, 4),
+                "wer": round(wer_val, 4),
+                "cer_percent": round(cer_val * 100, 2),
+                "wer_percent": round(wer_val * 100, 2),
+                "soglia_wer_usata": SOGLIA_WER,
+            },
+            "mock_attivo": True,
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 # =============== ROUTE STATO DI COMPLETAMENTO =========================
 
