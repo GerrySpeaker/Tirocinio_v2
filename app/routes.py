@@ -80,20 +80,21 @@ def post_livello():
     try:
         dati = request.get_json()
 
-        contenuto = {
-            "tipo": "mimo_labiale",
-            "video": dati['video'],
-            "testo": dati['testo'],
-            "scelte": dati['scelte'],
-            "risposta": dati['risposta']
-        }
+        # Campi obbligatori
+        numero      = dati.get('numero_livello')
+        titolo      = dati.get('titolo')
+        tipologia_id = dati.get('tipologia_id')
+        contenuto   = dati.get('contenuto')
+
+        if not all([numero, titolo, tipologia_id, contenuto]):
+            return jsonify({"error": "Campi obbligatori mancanti: numero_livello, titolo, tipologia_id, contenuto"}), 400
 
         livello_id = db.crea_livello(
-            numero = dati['numero_livello'],
-            titolo = dati['titolo'],
-            tipologia_id = dati['tipologia_id'], # Poiché il livello appartiene alla tipologia
-            contenuto = dati['contenuto'],
-            difficolta = dati.get('difficolta', 'medio')
+            numero       = numero,
+            titolo       = titolo,
+            tipologia_id = tipologia_id,
+            contenuto    = contenuto,
+            difficolta   = dati.get('difficolta', 'medio')
         )
 
         if livello_id:
@@ -103,7 +104,7 @@ def post_livello():
             }), 201
         else:
             return jsonify({"error": "Tipologia non trovata"}), 404
-        
+
     except Exception as e:
         return jsonify({"error": str(e)}), 400
     
@@ -428,3 +429,68 @@ def get_progressi(utente_id):
 def test_prova():
     return "La route funziona", 200
 
+
+# ==================== ROUTE ADMIN ====================
+
+@main.route('/admin')
+def admin():
+    """Pannello amministratore"""
+    return render_template('admin.html')
+
+
+@main.route('/admin/livelli/<livello_id>', methods=['PUT'])
+def aggiorna_livello(livello_id):
+    """Modifica un livello esistente (usato dal pannello admin)"""
+    try:
+        dati = request.get_json()
+
+        update_fields = {}
+
+        if 'numero_livello' in dati:
+            update_fields['numero_livello'] = dati['numero_livello']
+            update_fields['ordine'] = dati['numero_livello']
+        if 'titolo' in dati:
+            update_fields['titolo'] = dati['titolo']
+        if 'difficolta' in dati:
+            update_fields['difficolta'] = dati['difficolta']
+        if 'sbloccato' in dati:
+            update_fields['sbloccato'] = dati['sbloccato']
+        if 'completato' in dati:
+            update_fields['completato'] = dati['completato']
+        if 'contenuto' in dati:
+            update_fields['contenuto'] = dati['contenuto']
+
+        if not update_fields:
+            return jsonify({"error": "Nessun campo da aggiornare"}), 400
+
+        risultato = db.livelli_collection.update_one(
+            {"_id": ObjectId(livello_id)},
+            {"$set": update_fields}
+        )
+
+        if risultato.matched_count == 0:
+            return jsonify({"error": "Livello non trovato"}), 404
+
+        return jsonify({"success": True, "message": "Livello aggiornato"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@main.route('/admin/livelli/<livello_id>', methods=['DELETE'])
+def elimina_livello(livello_id):
+    """Soft-delete di un livello"""
+    try:
+        # Imposta l'action del livello a False così da nasconderlo e non eliminarlo del tutto
+        risultato = db.livelli_collection.update_one(
+            {"_id": ObjectId(livello_id)},
+            {"$set": {"attivo": False}}
+        )
+
+        if risultato.matched_count == 0:
+            return jsonify({"error": "Livello non trovato"}), 404
+
+        return jsonify({"success": True, "message": "Livello eliminato"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400

@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — Labiale Duo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+
+<div class="app-container">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="/static/images/LabDuo_nobg.png" alt="Logo">
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/">Home</a>
+            <a href="/about">Info</a>
+            <a href="/contact">Contatti</a>
+            <a href="/admin" class="active">⚙️ Admin</a>
+        </nav>
+    </aside>
+
+    <!-- CONTENUTO -->
+    <div class="content-wrapper">
+      <main class="admin-main">
+
+        <!-- HEADER -->
+        <div class="admin-header">
+            <div>
+                <h1>⚙️ Pannello Admin</h1>
+                <p>Gestisci tipologie e livelli del database</p>
+            </div>
+        </div>
+
+        <!-- STATS -->
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="stat-num" id="stat-livelli">–</div>
+                <div class="stat-label">Livelli totali</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num" id="stat-completati" style="color:#ffb400">–</div>
+                <div class="stat-label">Completati</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num" id="stat-sbloccati" style="color:#1cb0f6">–</div>
+                <div class="stat-label">Sbloccati</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num" id="stat-tipologie">–</div>
+                <div class="stat-label">Tipologie</div>
+            </div>
+        </div>
+
+        <!-- ===== SEZIONE: CREA LIVELLO ===== -->
+        <div class="section-card">
+            <div class="section-title">
+                ➕ Crea nuovo livello
+                <span class="badge">Livello</span>
+            </div>
+
+            <!-- TIPO SWITCHER -->
+            <div style="margin-bottom:16px;">
+                <label style="margin-bottom:8px; display:block;">Tipo di esercizio</label>
+                <div class="tipo-switcher">
+                    <button class="tipo-btn active" data-tipo="capire_labiale" onclick="switchTipo('capire_labiale')">
+                        👁️ Capire Labiale
+                    </button>
+                    <button class="tipo-btn" data-tipo="mimo_labiale" onclick="switchTipo('mimo_labiale')">
+                        🎤 Mimo Labiale
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-grid" id="form-crea-livello">
+
+                <!-- CAMPI COMUNI -->
+                <div class="form-group">
+                    <label>Numero livello *</label>
+                    <input type="number" id="cl-numero" placeholder="Es: 6" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Titolo *</label>
+                    <input type="text" id="cl-titolo" placeholder="Es: Esercizio 3 - Capire Labiale">
+                </div>
+                <div class="form-group">
+                    <label>Tipologia *</label>
+                    <select id="cl-tipologia">
+                        <option value="">— Caricamento... —</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Difficoltà</label>
+                    <select id="cl-difficolta">
+                        <option value="facile">Facile</option>
+                        <option value="medio" selected>Medio</option>
+                        <option value="difficile">Difficile</option>
+                    </select>
+                </div>
+
+                <!-- CAMPI: CAPIRE LABIALE -->
+                <div class="tipo-fields visible" id="fields-capire" data-tipo="capire_labiale">
+                    <div class="form-group">
+                        <label>Testo della consegna *</label>
+                        <input type="text" id="cl-testo" placeholder="Es: Guarda le labbra e scegli la parola">
+                    </div>
+                    <div class="form-group">
+                        <label>Percorso video *</label>
+                        <input type="text" id="cl-video" placeholder="Es: /static/videos/ciao.mp4">
+                    </div>
+                    <div class="form-group full">
+                        <label>Scelte (opzioni multiple) *</label>
+                        <div class="scelte-list" id="scelte-list">
+                            <div class="scelta-row">
+                                <input type="text" placeholder="Opzione 1">
+                                <button class="btn-rm-scelta" onclick="rimuoviScelta(this)">✕</button>
+                            </div>
+                            <div class="scelta-row">
+                                <input type="text" placeholder="Opzione 2">
+                                <button class="btn-rm-scelta" onclick="rimuoviScelta(this)">✕</button>
+                            </div>
+                        </div>
+                        <button class="btn-add-scelta" onclick="aggiungiScelta()">+ Aggiungi opzione</button>
+                    </div>
+                    <div class="form-group">
+                        <label>Risposta corretta *</label>
+                        <input type="text" id="cl-risposta" placeholder="Es: CIAO">
+                    </div>
+                </div>
+
+                <!-- CAMPI: MIMO LABIALE -->
+                <div class="tipo-fields" id="fields-mimo" data-tipo="mimo_labiale">
+                    <div class="form-group full">
+                        <label>Frase da mimare *</label>
+                        <input type="text" id="cl-frase" placeholder="Es: BUONGIORNO">
+                    </div>
+                    <div class="form-group full">
+                        <label>Testo guida (mostrato all'utente)</label>
+                        <input type="text" id="cl-testo-mimo" placeholder="Es: Mima questa parola guardando la telecamera">
+                    </div>
+                </div>
+
+                <!-- SUBMIT -->
+                <div class="form-group full" style="margin-top:8px;">
+                    <button class="btn btn-primary" onclick="creaLivello()">
+                        ✅ Crea livello
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== SEZIONE: CREA TIPOLOGIA ===== -->
+        <div class="section-card">
+            <div class="section-title">
+                🏷️ Crea nuova tipologia
+                <span class="badge">Tipologia</span>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Nome (identificatore) *</label>
+                    <input type="text" id="tip-nome" placeholder="Es: capire_labiale">
+                </div>
+                <div class="form-group">
+                    <label>Titolo display *</label>
+                    <input type="text" id="tip-titolo" placeholder="Es: Capire Labiale">
+                </div>
+                <div class="form-group full">
+                    <label>Descrizione</label>
+                    <textarea id="tip-descrizione" placeholder="Descrizione della tipologia..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Punti base</label>
+                    <input type="number" id="tip-punti" value="10" min="1">
+                </div>
+                <div class="form-group" style="align-self:flex-end;">
+                    <button class="btn btn-primary" onclick="creaTipologia()">
+                        ✅ Crea tipologia
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== SEZIONE: ELENCO LIVELLI ===== -->
+        <div class="section-card">
+            <div class="section-title">
+                📋 Livelli nel database
+                <span class="badge" id="badge-count">0 livelli</span>
+            </div>
+            <div style="margin-bottom:16px;">
+                <input type="text" id="cerca-livello" placeholder="🔍  Cerca per titolo, tipo o difficoltà..."
+                    oninput="filtraLivelli()" style="max-width:400px; background:white;">
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Titolo</th>
+                            <th>Tipo</th>
+                            <th>Difficoltà</th>
+                            <th>Stato</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabella-livelli">
+                        <tr><td colspan="6" style="text-align:center; padding:30px; color:var(--gray-400);">Caricamento...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+      </main>
+    </div><!-- /content-wrapper -->
+</div><!-- /app-container -->
+
+<!-- ===== MODAL MODIFICA ===== -->
+<div class="modal-overlay" id="modal-modifica">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="modal-title">✏️ Modifica livello</span>
+            <button class="modal-close" onclick="chiudiModal()">✕</button>
+        </div>
+        <div class="form-grid" id="modal-form">
+            <div class="form-group">
+                <label>Numero livello</label>
+                <input type="number" id="mod-numero">
+            </div>
+            <div class="form-group">
+                <label>Titolo</label>
+                <input type="text" id="mod-titolo">
+            </div>
+            <div class="form-group">
+                <label>Difficoltà</label>
+                <select id="mod-difficolta">
+                    <option value="facile">Facile</option>
+                    <option value="medio">Medio</option>
+                    <option value="difficile">Difficile</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Sbloccato</label>
+                <select id="mod-sbloccato">
+                    <option value="true">Sì</option>
+                    <option value="false">No</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Completato</label>
+                <select id="mod-completato">
+                    <option value="true">Sì</option>
+                    <option value="false">No</option>
+                </select>
+            </div>
+
+            <!-- Contenuto dinamico (solo campi visibili per tipo) -->
+            <div class="form-group full" id="mod-contenuto-wrap">
+                <!-- popolato da JS -->
+            </div>
+
+            <input type="hidden" id="mod-id">
+            <input type="hidden" id="mod-tipo">
+            <div class="form-group full" style="display:flex; gap:12px; margin-top:8px;">
+                <button class="btn btn-primary" onclick="salvaModifica()">💾 Salva modifiche</button>
+                <button class="btn btn-secondary" onclick="chiudiModal()">Annulla</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL CONFERMA ELIMINA ===== -->
+<div class="modal-overlay" id="modal-elimina">
+    <div class="modal" style="max-width:400px; text-align:center;">
+        <div style="font-size:48px; margin-bottom:16px;">🗑️</div>
+        <h2 style="margin-bottom:10px;">Elimina livello?</h2>
+        <p style="color:var(--gray-400); margin-bottom:24px;">Questa azione è irreversibile.</p>
+        <div style="display:flex; gap:12px; justify-content:center;">
+            <button class="btn btn-danger" onclick="confermaElimina()">Sì, elimina</button>
+            <button class="btn btn-secondary" onclick="chiudiModalElimina()">Annulla</button>
+        </div>
+    </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ==================== STATO ====================
+let tuttiLivelli = [];
+let tuttiTipologie = [];
+let tipoCorrente = 'capire_labiale';
+let livelloDaEliminare = null;
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', () => {
+    caricaTipologie();
+    caricaLivelli();
+});
+
+// ==================== TIPOLOGIE ====================
+async function caricaTipologie() {
+    try {
+        const res = await fetch('/tipologie');
+        tuttiTipologie = await res.json();
+
+        const sel = document.getElementById('cl-tipologia');
+        sel.innerHTML = '';
+        tuttiTipologie.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t._id;
+            opt.textContent = `${t.titolo_display} (${t.nome})`;
+            sel.appendChild(opt);
+        });
+        document.getElementById('stat-tipologie').textContent = tuttiTipologie.length;
+    } catch (e) {
+        mostraToast('Errore caricamento tipologie', 'error');
+    }
+}
+
+async function creaTipologia() {
+    const nome = document.getElementById('tip-nome').value.trim();
+    const titolo = document.getElementById('tip-titolo').value.trim();
+    const descrizione = document.getElementById('tip-descrizione').value.trim();
+    const punti = parseInt(document.getElementById('tip-punti').value) || 10;
+
+    if (!nome || !titolo) { mostraToast('Nome e titolo sono obbligatori', 'error'); return; }
+
+    try {
+        const res = await fetch('/tipologie', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, titolo_display: titolo, descrizione, punti_base: punti })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            mostraToast('✅ Tipologia creata!', 'success');
+            document.getElementById('tip-nome').value = '';
+            document.getElementById('tip-titolo').value = '';
+            document.getElementById('tip-descrizione').value = '';
+            document.getElementById('tip-punti').value = 10;
+            caricaTipologie();
+        } else {
+            mostraToast(data.error || 'Errore', 'error');
+        }
+    } catch(e) {
+        mostraToast('Errore di rete', 'error');
+    }
+}
+
+// ==================== LIVELLI ====================
+async function caricaLivelli() {
+    try {
+        const res = await fetch('/livelli');
+        tuttiLivelli = await res.json();
+        tuttiLivelli.sort((a, b) => a.numero_livello - b.numero_livello);
+        renderTabella(tuttiLivelli);
+        aggiornaStats();
+    } catch(e) {
+        mostraToast('Errore caricamento livelli', 'error');
+    }
+}
+
+function aggiornaStats() {
+    document.getElementById('stat-livelli').textContent = tuttiLivelli.length;
+    document.getElementById('stat-completati').textContent = tuttiLivelli.filter(l => l.completato).length;
+    document.getElementById('stat-sbloccati').textContent = tuttiLivelli.filter(l => l.sbloccato).length;
+    document.getElementById('badge-count').textContent = tuttiLivelli.length + ' livelli';
+}
+
+function renderTabella(livelli) {
+    const tbody = document.getElementById('tabella-livelli');
+    if (livelli.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray-400);">Nessun livello trovato</td></tr>';
+        return;
+    }
+    tbody.innerHTML = livelli.map(liv => {
+        const tipo = liv.contenuto?.tipo || '–';
+        const pillTipo = tipo === 'mimo_labiale'
+            ? `<span class="pill pill-mimo">🎤 Mimo</span>`
+            : `<span class="pill pill-capire">👁️ Capire</span>`;
+
+        const statoSblocco = liv.sbloccato
+            ? (liv.completato
+                ? `<span class="pill pill-completato">✅ Completato</span>`
+                : `<span class="pill pill-incompleto">🟡 In corso</span>`)
+            : `<span class="pill pill-locked">🔒 Bloccato</span>`;
+
+        return `<tr>
+            <td><strong>${liv.numero_livello}</strong></td>
+            <td>${liv.titolo}</td>
+            <td>${pillTipo}</td>
+            <td>${liv.difficolta || '–'}</td>
+            <td>${statoSblocco}</td>
+            <td style="display:flex;gap:8px;">
+                <button class="btn btn-secondary btn-sm" onclick='apriModifica(${JSON.stringify(liv)})'>✏️ Modifica</button>
+                <button class="btn btn-danger btn-sm" onclick="avviaElimina('${liv._id}')">🗑️</button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function filtraLivelli() {
+    const q = document.getElementById('cerca-livello').value.toLowerCase();
+    const filtrati = tuttiLivelli.filter(l =>
+        l.titolo?.toLowerCase().includes(q) ||
+        l.contenuto?.tipo?.toLowerCase().includes(q) ||
+        l.difficolta?.toLowerCase().includes(q)
+    );
+    renderTabella(filtrati);
+}
+
+// ==================== CREA LIVELLO ====================
+function switchTipo(tipo) {
+    tipoCorrente = tipo;
+    document.querySelectorAll('.tipo-btn').forEach(b => b.classList.toggle('active', b.dataset.tipo === tipo));
+    document.querySelectorAll('.tipo-fields').forEach(f => f.classList.toggle('visible', f.dataset.tipo === tipo));
+}
+
+function aggiungiScelta() {
+    const list = document.getElementById('scelte-list');
+    const n = list.children.length + 1;
+    const row = document.createElement('div');
+    row.className = 'scelta-row';
+    row.innerHTML = `<input type="text" placeholder="Opzione ${n}"><button class="btn-rm-scelta" onclick="rimuoviScelta(this)">✕</button>`;
+    list.appendChild(row);
+}
+
+function rimuoviScelta(btn) {
+    const list = document.getElementById('scelte-list');
+    if (list.children.length > 1) btn.parentElement.remove();
+    else mostraToast('Deve esserci almeno un\'opzione', 'error');
+}
+
+async function creaLivello() {
+    const numero = parseInt(document.getElementById('cl-numero').value);
+    const titolo = document.getElementById('cl-titolo').value.trim();
+    const tipologia_id = document.getElementById('cl-tipologia').value;
+    const difficolta = document.getElementById('cl-difficolta').value;
+
+    if (!numero || !titolo || !tipologia_id) {
+        mostraToast('Numero, titolo e tipologia sono obbligatori', 'error');
+        return;
+    }
+
+    let contenuto = { tipo: tipoCorrente };
+
+    if (tipoCorrente === 'capire_labiale') {
+        const testo = document.getElementById('cl-testo').value.trim();
+        const video = document.getElementById('cl-video').value.trim();
+        const risposta = document.getElementById('cl-risposta').value.trim();
+        const scelte = Array.from(document.querySelectorAll('#scelte-list .scelta-row input'))
+            .map(i => i.value.trim())
+            .filter(Boolean);
+
+        if (!testo || !video || !risposta || scelte.length === 0) {
+            mostraToast('Compila tutti i campi per Capire Labiale', 'error');
+            return;
+        }
+        contenuto = { tipo: 'capire_labiale', testo, video, scelte, risposta };
+
+    } else if (tipoCorrente === 'mimo_labiale') {
+        const frase = document.getElementById('cl-frase').value.trim();
+        const testo = document.getElementById('cl-testo-mimo').value.trim() || 'Mima questa parola';
+
+        if (!frase) { mostraToast('Inserisci la frase da mimare', 'error'); return; }
+        contenuto = { tipo: 'mimo_labiale', frase, testo };
+    }
+
+    try {
+        const res = await fetch('/livelli', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ numero_livello: numero, titolo, tipologia_id, difficolta, contenuto })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            mostraToast('✅ Livello creato con successo!', 'success');
+            resetFormCrea();
+            caricaLivelli();
+        } else {
+            mostraToast(data.error || 'Errore nella creazione', 'error');
+        }
+    } catch(e) {
+        mostraToast('Errore di rete', 'error');
+    }
+}
+
+function resetFormCrea() {
+    ['cl-numero','cl-titolo','cl-testo','cl-video','cl-risposta','cl-frase','cl-testo-mimo'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    document.getElementById('scelte-list').innerHTML = `
+        <div class="scelta-row"><input type="text" placeholder="Opzione 1"><button class="btn-rm-scelta" onclick="rimuoviScelta(this)">✕</button></div>
+        <div class="scelta-row"><input type="text" placeholder="Opzione 2"><button class="btn-rm-scelta" onclick="rimuoviScelta(this)">✕</button></div>
+    `;
+}
+
+// ==================== MODIFICA ====================
+function apriModifica(liv) {
+    document.getElementById('mod-id').value = liv._id;
+    document.getElementById('mod-numero').value = liv.numero_livello;
+    document.getElementById('mod-titolo').value = liv.titolo;
+    document.getElementById('mod-difficolta').value = liv.difficolta || 'medio';
+    document.getElementById('mod-sbloccato').value = liv.sbloccato ? 'true' : 'false';
+    document.getElementById('mod-completato').value = liv.completato ? 'true' : 'false';
+    document.getElementById('mod-tipo').value = liv.contenuto?.tipo || '';
+
+    // Contenuto dinamico
+    const wrap = document.getElementById('mod-contenuto-wrap');
+    const tipo = liv.contenuto?.tipo;
+    const c = liv.contenuto || {};
+
+    if (tipo === 'capire_labiale') {
+        wrap.innerHTML = `
+            <label style="margin-bottom:6px;display:block;">Testo consegna</label>
+            <input type="text" id="mod-testo" value="${escHtml(c.testo || '')}" style="margin-bottom:12px;">
+            <label style="margin-bottom:6px;display:block;">Percorso video</label>
+            <input type="text" id="mod-video" value="${escHtml(c.video || '')}" style="margin-bottom:12px;">
+            <label style="margin-bottom:6px;display:block;">Risposta corretta</label>
+            <input type="text" id="mod-risposta" value="${escHtml(c.risposta || '')}">
+        `;
+    } else if (tipo === 'mimo_labiale') {
+        wrap.innerHTML = `
+            <label style="margin-bottom:6px;display:block;">Frase da mimare</label>
+            <input type="text" id="mod-frase" value="${escHtml(c.frase || c.testo || '')}" style="margin-bottom:12px;">
+            <label style="margin-bottom:6px;display:block;">Testo guida</label>
+            <input type="text" id="mod-testo-mimo" value="${escHtml(c.testo || '')}">
+        `;
+    } else {
+        wrap.innerHTML = `<p style="color:var(--gray-400)">Tipo non riconosciuto: ${tipo}</p>`;
+    }
+
+    document.getElementById('modal-modifica').classList.add('open');
+}
+
+function chiudiModal() {
+    document.getElementById('modal-modifica').classList.remove('open');
+}
+
+async function salvaModifica() {
+    const id = document.getElementById('mod-id').value;
+    const tipo = document.getElementById('mod-tipo').value;
+
+    const body = {
+        numero_livello: parseInt(document.getElementById('mod-numero').value),
+        titolo: document.getElementById('mod-titolo').value.trim(),
+        difficolta: document.getElementById('mod-difficolta').value,
+        sbloccato: document.getElementById('mod-sbloccato').value === 'true',
+        completato: document.getElementById('mod-completato').value === 'true',
+    };
+
+    // Aggiorna contenuto in base al tipo
+    if (tipo === 'capire_labiale') {
+        body.contenuto = {
+            tipo,
+            testo: document.getElementById('mod-testo')?.value.trim() || '',
+            video: document.getElementById('mod-video')?.value.trim() || '',
+            risposta: document.getElementById('mod-risposta')?.value.trim() || '',
+        };
+    } else if (tipo === 'mimo_labiale') {
+        body.contenuto = {
+            tipo,
+            frase: document.getElementById('mod-frase')?.value.trim() || '',
+            testo: document.getElementById('mod-testo-mimo')?.value.trim() || '',
+        };
+    }
+
+    try {
+        const res = await fetch(`/admin/livelli/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok) {
+            mostraToast('✅ Livello aggiornato!', 'success');
+            chiudiModal();
+            caricaLivelli();
+        } else {
+            mostraToast(data.error || 'Errore', 'error');
+        }
+    } catch(e) {
+        mostraToast('Errore di rete', 'error');
+    }
+}
+
+// ==================== ELIMINA ====================
+function avviaElimina(id) {
+    livelloDaEliminare = id;
+    document.getElementById('modal-elimina').classList.add('open');
+}
+function chiudiModalElimina() {
+    livelloDaEliminare = null;
+    document.getElementById('modal-elimina').classList.remove('open');
+}
+async function confermaElimina() {
+    if (!livelloDaEliminare) return;
+    try {
+        const res = await fetch(`/admin/livelli/${livelloDaEliminare}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok) {
+            mostraToast('🗑️ Livello eliminato', 'success');
+            chiudiModalElimina();
+            caricaLivelli();
+        } else {
+            mostraToast(data.error || 'Errore', 'error');
+        }
+    } catch(e) {
+        mostraToast('Errore di rete', 'error');
+    }
+}
+
+// ==================== UTILS ====================
+function mostraToast(msg, tipo = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `show ${tipo}`;
+    setTimeout(() => { t.className = ''; }, 3000);
+}
+
+function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Chiudi modali cliccando l'overlay
+document.getElementById('modal-modifica').addEventListener('click', function(e) {
+    if (e.target === this) chiudiModal();
+});
+document.getElementById('modal-elimina').addEventListener('click', function(e) {
+    if (e.target === this) chiudiModalElimina();
+});
+</script>
+</body>
+</html>

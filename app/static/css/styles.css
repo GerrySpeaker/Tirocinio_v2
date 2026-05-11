@@ -304,3 +304,295 @@ h1 { font-size: 42px; margin-bottom: 20px; }
     margin-bottom: 15px;
   }
 }
+
+/*
+ ================================================
+   PANNELLO ADMIN |
+ ================================================ */
+:root {
+    --green-dark: #46a302;
+    --green-soft: #e7f9d0;
+    --red: #ff4b4b;
+    --red-soft: #fff0f0;
+    --blue: #1cb0f6;
+    --blue-soft: #e8f7fe;
+    --gray-100: #f4f4f4;
+    --gray-200: #e5e5e5;
+    --gray-400: #afafaf;
+    --gray-700: #4b4b4b;
+    --gray-900: #2d2d2d;
+    --shadow: 0 4px 0;
+}
+
+/* --- Layout contenuto admin --- */
+.admin-content { padding: 40px 36px; }
+
+/* Override del main globale per la pagina admin */
+.admin-main {
+    max-width: 860px;
+    width: 100%;
+    margin: 0 auto;
+    text-align: left;
+    padding: 40px 36px;
+}
+
+/* --- Header --- */
+.admin-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 36px;
+}
+.admin-header h1 { font-size: 2rem; color: var(--gray-900); }
+.admin-header p  { color: var(--gray-400); margin-top: 4px; font-size: 0.95rem; }
+
+/* --- Stats bar --- */
+.stats-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+}
+.stat-box {
+    flex: 1;
+    min-width: 120px;
+    background: white;
+    border: 2px solid var(--gray-200);
+    border-radius: 16px;
+    padding: 18px 20px;
+    text-align: center;
+}
+.stat-num   { font-size: 2rem; font-weight: 900; color: #58cc02; }
+.stat-label { font-size: 0.8rem; color: var(--gray-400); margin-top: 4px; font-weight: 600; }
+
+/* --- Section card --- */
+.section-card {
+    background: white;
+    border: 2px solid var(--gray-200);
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 32px;
+}
+.section-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--gray-900);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.section-title .badge {
+    background: var(--green-soft);
+    color: var(--green-dark);
+    border-radius: 999px;
+    padding: 3px 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+/* --- Form --- */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1 / -1; }
+
+label { font-weight: 700; font-size: 0.85rem; color: var(--gray-700); letter-spacing: 0.03em; }
+
+input, select, textarea {
+    border: 2px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: var(--gray-900);
+    background: var(--gray-100);
+    transition: border-color 0.2s, background 0.2s;
+    outline: none;
+}
+input:focus, select:focus, textarea:focus {
+    border-color: #58cc02;
+    background: white;
+}
+textarea { resize: vertical; min-height: 80px; }
+
+/* --- Switcher tipo esercizio --- */
+.tipo-switcher { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+
+.tipo-btn {
+    border: 2px solid var(--gray-200);
+    background: var(--gray-100);
+    border-radius: 12px;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--gray-700);
+}
+.tipo-btn:hover          { border-color: #58cc02; color: #58cc02; }
+.tipo-btn.active         { background: var(--green-soft); border-color: #58cc02; color: var(--green-dark); }
+
+/* Campi dinamici per tipo */
+.tipo-fields         { display: none; }
+.tipo-fields.visible { display: contents; }
+
+/* --- Scelte (array dinamico) --- */
+.scelte-list { display: flex; flex-direction: column; gap: 8px; }
+.scelta-row  { display: flex; align-items: center; gap: 8px; }
+.scelta-row input { flex: 1; }
+
+.btn-rm-scelta {
+    background: none;
+    border: 2px solid var(--gray-200);
+    border-radius: 8px;
+    width: 36px; height: 36px;
+    cursor: pointer;
+    font-size: 18px;
+    color: var(--red);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+}
+.btn-rm-scelta:hover { background: var(--red-soft); border-color: var(--red); }
+
+.btn-add-scelta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    background: none;
+    border: 2px dashed #58cc02;
+    border-radius: 10px;
+    padding: 8px 16px;
+    color: #58cc02;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.15s;
+}
+.btn-add-scelta:hover { background: var(--green-soft); }
+
+/* --- Bottoni --- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    border-radius: 14px;
+    padding: 13px 26px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.1s;
+    text-decoration: none;
+}
+.btn-primary  { background: #58cc02; color: white; box-shadow: var(--shadow) var(--green-dark); }
+.btn-primary:hover  { filter: brightness(1.05); }
+.btn-primary:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--green-dark); }
+
+.btn-danger   { background: var(--red); color: white; box-shadow: var(--shadow) #c03a3a; }
+.btn-danger:hover   { filter: brightness(1.05); }
+.btn-danger:active  { transform: translateY(3px); box-shadow: 0 1px 0 #c03a3a; }
+
+.btn-secondary { background: var(--gray-200); color: var(--gray-700); box-shadow: var(--shadow) #c5c5c5; }
+.btn-secondary:hover  { background: #ddd; }
+.btn-secondary:active { transform: translateY(3px); box-shadow: 0 1px 0 #c5c5c5; }
+
+.btn-sm { padding: 8px 14px; font-size: 0.82rem; border-radius: 10px; }
+
+/* --- Tabella livelli --- */
+.table-wrap { overflow-x: auto; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+
+thead th {
+    background: var(--gray-100);
+    padding: 12px 14px;
+    text-align: left;
+    font-weight: 800;
+    color: var(--gray-700);
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--gray-200);
+}
+tbody tr { border-bottom: 1px solid var(--gray-200); transition: background 0.15s; }
+tbody tr:hover { background: var(--gray-100); }
+tbody td { padding: 12px 14px; vertical-align: middle; }
+
+/* --- Pill stato/tipo --- */
+.pill           { display: inline-block; border-radius: 999px; padding: 3px 10px; font-size: 0.78rem; font-weight: 700; }
+.pill-mimo      { background: var(--blue-soft); color: #0e7ab8; }
+.pill-capire    { background: var(--green-soft); color: var(--green-dark); }
+.pill-locked    { background: var(--gray-100); color: var(--gray-400); }
+.pill-completato { background: var(--green-soft); color: var(--green-dark); }
+.pill-incompleto { background: #fff7e0; color: #b07d00; }
+
+/* --- Modal --- */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+    background: white;
+    border-radius: 20px;
+    padding: 32px;
+    max-width: 560px;
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.2s ease;
+}
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+.modal-title { font-size: 1.2rem; font-weight: 800; }
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: var(--gray-400);
+    padding: 4px;
+    line-height: 1;
+}
+.modal-close:hover { color: var(--gray-900); }
+
+/* --- Toast notifiche --- */
+#toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    padding: 14px 22px;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: white;
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    pointer-events: none;
+}
+#toast.show    { opacity: 1; transform: translateY(0); }
+#toast.success { background: #58cc02; }
+#toast.error   { background: var(--red); }
+
+/* --- Responsive admin --- */
+@media (max-width: 900px) {
+    .admin-content { padding: 20px 14px; }
+    .form-grid     { grid-template-columns: 1fr; }
+}
