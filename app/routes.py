@@ -471,6 +471,7 @@ def aggiorna_livello(livello_id):
         if risultato.matched_count == 0:
             return jsonify({"error": "Livello non trovato"}), 404
 
+        rinumera_livelli()
         return jsonify({"success": True, "message": "Livello aggiornato"}), 200
 
     except Exception as e:
@@ -489,8 +490,26 @@ def elimina_livello(livello_id):
 
         if risultato.matched_count == 0:
             return jsonify({"error": "Livello non trovato"}), 404
-
+        
+        rinumera_livelli() # Riordina tutti i livelli dopo l'eliminazione
         return jsonify({"success": True, "message": "Livello eliminato"}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+    
+
+def rinumera_livelli():
+    """
+    Riordina tutti i livelli attivi in sequenza (1,2,3,...)
+    Va chiamata dopo la creazione di ogni livello o eliminazione di un livello
+    E i livelli vengono ordinati in base al campo 'ordine' corrente
+    """
+    livelli = list(
+        db.livelli_collection.find({"attivo": True}).sort("ordine", 1)
+    )
+    for i,livello in enumerate(livelli, start=1):
+        db.livelli_collection.update_one(
+            {"_id": livello["_id"]},
+            {"$set": {"ordine": i, "numero_livello": i}}
+        )
+       

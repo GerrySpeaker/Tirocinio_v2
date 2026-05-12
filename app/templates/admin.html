@@ -432,6 +432,22 @@ function rimuoviScelta(btn) {
     else mostraToast('Deve esserci almeno un\'opzione', 'error');
 }
 
+// Versione per il modal di modifica
+function aggiungiSceltaModal() {
+    const list = document.getElementById('mod-scelte-list');
+    const n = list.children.length + 1;
+    const row = document.createElement('div');
+    row.className = 'scelta-row';
+    row.innerHTML = `<input type="text" placeholder="Opzione ${n}"><button class="btn-rm-scelta" onclick="rimuoviSceltaModal(this)">✕</button>`;
+    list.appendChild(row);
+}
+
+function rimuoviSceltaModal(btn) {
+    const list = document.getElementById('mod-scelte-list');
+    if (list.children.length > 1) btn.parentElement.remove();
+    else mostraToast('Deve esserci almeno un\'opzione', 'error');
+}
+
 async function creaLivello() {
     const numero = parseInt(document.getElementById('cl-numero').value);
     const titolo = document.getElementById('cl-titolo').value.trim();
@@ -513,11 +529,24 @@ function apriModifica(liv) {
     const c = liv.contenuto || {};
 
     if (tipo === 'capire_labiale') {
+        // Costruisce le righe scelte esistenti
+        const scelteEsistenti = (c.scelte || []).map((s, i) => `
+            <div class="scelta-row">
+                <input type="text" value="${escHtml(s)}" placeholder="Opzione ${i + 1}">
+                <button class="btn-rm-scelta" onclick="rimuoviSceltaModal(this)">✕</button>
+            </div>
+        `).join('');
+
         wrap.innerHTML = `
             <label style="margin-bottom:6px;display:block;">Testo consegna</label>
             <input type="text" id="mod-testo" value="${escHtml(c.testo || '')}" style="margin-bottom:12px;">
             <label style="margin-bottom:6px;display:block;">Percorso video</label>
             <input type="text" id="mod-video" value="${escHtml(c.video || '')}" style="margin-bottom:12px;">
+            <label style="margin-bottom:6px;display:block;">Scelte</label>
+            <div class="scelte-list" id="mod-scelte-list">
+                ${scelteEsistenti}
+            </div>
+            <button class="btn-add-scelta" style="margin-bottom:12px;" onclick="aggiungiSceltaModal()">+ Aggiungi opzione</button>
             <label style="margin-bottom:6px;display:block;">Risposta corretta</label>
             <input type="text" id="mod-risposta" value="${escHtml(c.risposta || '')}">
         `;
@@ -553,10 +582,14 @@ async function salvaModifica() {
 
     // Aggiorna contenuto in base al tipo
     if (tipo === 'capire_labiale') {
+        const scelte = Array.from(document.querySelectorAll('#mod-scelte-list .scelta-row input'))
+            .map(i => i.value.trim())
+            .filter(Boolean);
         body.contenuto = {
             tipo,
             testo: document.getElementById('mod-testo')?.value.trim() || '',
             video: document.getElementById('mod-video')?.value.trim() || '',
+            scelte,
             risposta: document.getElementById('mod-risposta')?.value.trim() || '',
         };
     } else if (tipo === 'mimo_labiale') {
