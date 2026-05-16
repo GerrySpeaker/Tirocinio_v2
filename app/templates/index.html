@@ -176,7 +176,7 @@
     
                     // 2. Recuperiamo la frase (assumendo si chiami 'frase' o simile dentro contenuto)
                     // Se nel DB il campo si chiama 'testo', cambia .frase_da_mimare in .testo
-                    const fraseDaMostrare = data.contenuto.testo || "Testo non trovato";
+                    const fraseDaMostrare = data.contenuto.frase || data.contenuto.testo || "Testo non trovato";
 
                     esercizioEl.innerHTML = `
                         <div class="esercizio-container">
@@ -290,6 +290,7 @@
             mediaRecorder = new MediaRecorder(stream, {mimeType: 'video/webm'});
 
             mediaRecorder.ondataavailable = (event) => {
+                console.log("Chunk ricevuto, size:", event.data.size); // Aggiunta per controllo
                 if(event.data.size > 0) recordedChunks.push(event.data);
             };
 
@@ -299,6 +300,7 @@
             };
 
             mediaRecorder.start();
+            console.log("MediaRecorder avviato, stato:", mediaRecorder.state); // Aggiunta per controllo
             btn.innerHTML = "Ferma e analizza";
             btn.style.background = "#222";
             statusDiv.style.color = "red";
@@ -314,6 +316,7 @@
     }
 
     async function inviaVideoALipnet(livelloId, fraseTarget) {
+        console.log("inviaVideoALipnet chiamata con:", livelloId, fraseTarget)
         const blob = new Blob(recordedChunks, {type: 'video/webm'});
         const formData = new FormData();
         formData.append('video', blob);
@@ -362,7 +365,7 @@
             // SBLOCCHIAMO IL TASTO AVANTI
             btnAvanti.classList.remove('disabilitato');
             btnAvanti.disabled = false;
-            btnAvanti.style.transform = "scale(1.05)"; // Piccolo feedback visivo
+            btnAvanti.style.transform = "scale(1.05)"; // Piccolo feedback visivo   
         } else {
             divRisultato.style.color = "#ff4b4b";
             divRisultato.innerHTML = "Sbagliato, riprova!";

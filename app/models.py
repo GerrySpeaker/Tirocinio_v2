@@ -337,25 +337,52 @@ def elabora_video_per_lipnet(video_path):
 def trascrivi_video(video_path: str, frase_attesa: str) -> dict:
     """
     Funzione principale - black box completa.
-    Oggi: mock
-    Domani: LipNet reale
+    Invia il video al server LipNet su localhost:5001 e riceve la trascrizione.
+    Il calcolo di WER e CER avviene qui, come prima.
     """
-    dati_per_ia = elabora_video_per_lipnet(video_path)
+    import requests
 
-    if dati_per_ia is None or len(dati_per_ia) == 0:
-        return {"success": False, "error": "Frame non estratti"}
-    
-    # Aggiungo questo al momento per effettuare il mock visto che non ho il modello IA
-    trascrizione = mock_lipnet_trascrizione(frase_attesa, modalita="realistica")
+    LIPNET_SERVER = "http://localhost:5001"
 
-    # Aggiungo richiami di funzione per i controlli e ottenimento dati
+    try:
+        # Apriamo il video e lo inviamo al server LipNet
+        with open(video_path, "rb") as f:
+            risposta = requests.post(
+                f"{LIPNET_SERVER}/upload",
+                files={"file": ("temp_mimo.webm", f, "video/webm")},
+                data={"saliency_map": "false"},
+                timeout=120  # LipNet può richiedere tempo per elaborare
+            )
+
+        if risposta.status_code != 200:
+            return {"success": False, "error": f"Errore server LipNet: {risposta.status_code}"}
+
+        # Il server restituisce {"message": "parola trascritta"}
+        trascrizione = risposta.json().get("message", "").strip()
+
+        if not trascrizione:
+            return {"success": False, "error": "Trascrizione vuota dal server LipNet"}
+
+    except requests.exceptions.ConnectionError:
+        return {"success": False, "error": "Server LipNet non raggiungibile — assicurati che sia avviato su localhost:5001"}
+    except requests.exceptions.Timeout:
+        return {"success": False, "error": "Timeout — il server LipNet ha impiegato troppo tempo"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+    # Calcolo WER e CER — invariato rispetto a prima
     ref = frase_attesa.lower().strip()
     hyp = trascrizione.lower().strip()
-    cer = calcola_cer(ref, hyp)     # ref = reference
-    wer = calcola_wer(ref, hyp)     # hyp = hypotesis
+    cer = calcola_cer(ref, hyp)
+    wer = calcola_wer(ref, hyp)
 
-    # Confronto con il DB
-    livello_superato = wer <= 0.25 # Soglia configurabile
+    print(f"REF: {ref}")
+    print(f"HYP: {hyp}")
+    print(f"WER: {wer}")
+    print(f"CER: {cer}")
+
+    # Soglia configurabile per considerare il livello superato
+    livello_superato = wer <= 0.80
 
     return {
         "trascrizione": trascrizione,
@@ -364,7 +391,7 @@ def trascrivi_video(video_path: str, frase_attesa: str) -> dict:
             "wer_percent": round(wer * 100, 2),
             "cer_percent": round(cer * 100, 2),
         },
-        "mock_attivo": True # Diventa false quando LipNet è reale
+        "mock_attivo": False  # LipNet reale attivo
     }
 
 

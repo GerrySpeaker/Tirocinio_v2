@@ -194,56 +194,6 @@ def verifica_risposta(livello_id):
         print(f"Errore verifica: {e}")
         return jsonify({"error": str(e)}), 400
     
-"""
-@main.route('/livelli/<livello_id>/analisi-lipnet', methods=['POST'])
-def analisi_lipnet(livello_id):
-    try:
-        video_file = request.files.get('video')
-        frase_attesa = request.form.get('frase_attesa')
-
-        if not video_file:
-            return jsonify({"success": False, "error": "File video non ricevuto"}), 400
-
-        # Salvataggio
-        video_path = os.path.join("uploads", "temp_mimo.mp4")
-        video_file.save(video_path)
-
-        # Elaborazione
-        dati_per_ia = elabora_video_per_lipnet(video_path)
-
-        # Controllo se l'elaborazione ha prodotto dati
-        if dati_per_ia is None or len(dati_per_ia) == 0:
-            return jsonify({"success": False, "error": "Impossibile elaborare i frame del video"}), 400
-
-        # Trascrizione reale (o placeholder)
-        trascrizione = frase_attesa  # sostituire con il vero output del modello
-
-        # ── NUOVO: normalizzazione ──────────────────────────────────────────
-        ref = frase_attesa.lower().strip()
-        hyp = trascrizione.lower().strip()
-
-        # ── NUOVO: calcolo CER e WER ────────────────────────────────────────
-        cer = db.calcola_cer(ref, hyp)
-        wer = db.calcola_wer(ref, hyp)
-
-        # successo se WER == 0 (corrispondenza perfetta) oppure sotto soglia
-        successo = wer == 0.0
-
-        # RITORNO VALIDO
-        return jsonify({
-            "success": successo,
-            "trascrizione": trascrizione,
-            "message": "Analisi completata",
-            "cer": round(cer, 4),        # ── NUOVO
-            "wer": round(wer, 4),        # ── NUOVO
-            "cer_percent": round(cer * 100, 2),   # ── NUOVO  (leggibilità)
-            "wer_percent": round(wer * 100, 2),   # ── NUOVO
-        })
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-    
-    # successo = (trascrizione.lower().strip() == frase_attesa.lower().strip())
-"""
 # =============== ROUTE ANALISI LIPNET ================================
 
 @main.route('/livelli/<livello_id>/analisi-lipnet', methods=['POST'])
@@ -251,48 +201,31 @@ def analisi_lipnet(livello_id):
     try:
         video_file = request.files.get('video')
         frase_attesa = request.form.get('frase_attesa')
-        modalita_mock = request.form.get('modalita_mock', 'realistica')
 
         if not video_file:
             return jsonify({"success": False, "error": "File video non ricevuto"}), 400
 
-        video_path = os.path.join("uploads", "temp_mimo.mp4")
+        if not frase_attesa:
+            return jsonify({"success": False, "error": "Frase attesa non ricevuta"}), 400
+
+        # Salva il video nella cartella uploads
+        video_path = os.path.join("uploads", "temp_mimo.webm")
         video_file.save(video_path)
 
-        # STEP 1 — elaborazione frame
-        dati_per_ia = db.elabora_video_per_lipnet(video_path)
+        # Invia il video al server LipNet e ottieni trascrizione + metriche
+        risultato = db.trascrivi_video(video_path, frase_attesa)
 
-        if dati_per_ia is None or len(dati_per_ia) == 0:
-            return jsonify({"success": False, "error": "Impossibile elaborare i frame del video"}), 400
-
-        # STEP 2 — trascrizione (mock oggi, LipNet domani)
-        # FUTURO: trascrizione = modello_lipnet.predici(dati_per_ia)
-        trascrizione = db.mock_lipnet_trascrizione(frase_attesa, modalita=modalita_mock)
-
-        # STEP 3 — metriche
-        ref = frase_attesa.lower().strip()
-        hyp = trascrizione.lower().strip()
-        cer_val = db.calcola_cer(ref, hyp)
-        wer_val = db.calcola_wer(ref, hyp)
-
-        # STEP 4 — soglia configurabile
-        SOGLIA_WER = float(request.form.get('soglia_wer', 0.25))
-        successo = wer_val <= SOGLIA_WER
+        if not risultato.get("trascrizione"):
+            return jsonify({"success": False, "error": risultato.get("error", "Errore sconosciuto")}), 500
 
         return jsonify({
-            "success": successo,
-            "trascrizione": trascrizione,
+            "success": risultato.get("livello_superato", False),
+            "trascrizione": risultato.get("trascrizione"),
             "frase_attesa": frase_attesa,
             "message": "Analisi completata",
-            "metriche": {
-                "cer": round(cer_val, 4),
-                "wer": round(wer_val, 4),
-                "cer_percent": round(cer_val * 100, 2),
-                "wer_percent": round(wer_val * 100, 2),
-                "soglia_wer_usata": SOGLIA_WER,
-            },
-            "mock_attivo": True,
-        })
+            "metriche": risultato.get("metriche", {}),
+            "mock_attivo": risultato.get("mock_attivo", False),
+        }), 200
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -472,7 +405,7 @@ def aggiorna_livello(livello_id):
             return jsonify({"error": "Livello non trovato"}), 404
 
         rinumera_livelli()
-        return jsonify({"success": True, "message": "Livello aggiornato"}), 200
+        return jsonify({"success": True, "message": "Livello aggiornato"}), 200  
 
     except Exception as e:
         return jsonify({"error": str(e)}), 400
@@ -512,4 +445,3 @@ def rinumera_livelli():
             {"_id": livello["_id"]},
             {"$set": {"ordine": i, "numero_livello": i}}
         )
-       
