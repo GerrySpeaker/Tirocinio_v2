@@ -176,7 +176,7 @@
     
                     // 2. Recuperiamo la frase (assumendo si chiami 'frase' o simile dentro contenuto)
                     // Se nel DB il campo si chiama 'testo', cambia .frase_da_mimare in .testo
-                    const fraseDaMostrare = data.contenuto.frase || data.contenuto.testo || "Testo non trovato";
+                    const fraseDaMostrare = data.contenuto.testo || "Testo non trovato";
 
                     esercizioEl.innerHTML = `
                         <div class="esercizio-container">
@@ -261,7 +261,8 @@
                 video: {
                     width: 640,
                     height: 480,
-                    facingMode: "user" // Usa la fotocamera sui dispositivi mobili
+                    facingMode: "user",
+                    frameRate: {ideal: 25, max: 25}
                 },
                 audio: false
             });
@@ -276,6 +277,7 @@
 
     let mediaRecorder;
     let recordedChunks = [];
+    let countdownInterval = null;
 
     function gestisciRegistrazione(livelloId, fraseTarget){
         const btn = document.getElementById('btn-registra');
@@ -286,11 +288,10 @@
             recordedChunks = [];
             const stream = document.getElementById('webcam').srcObject;
 
-            // Specifico il formato video (webm è lo standard per i browser)
             mediaRecorder = new MediaRecorder(stream, {mimeType: 'video/webm'});
 
             mediaRecorder.ondataavailable = (event) => {
-                console.log("Chunk ricevuto, size:", event.data.size); // Aggiunta per controllo
+                console.log("Chunk ricevuto, size:", event.data.size);
                 if(event.data.size > 0) recordedChunks.push(event.data);
             };
 
@@ -300,23 +301,35 @@
             };
 
             mediaRecorder.start();
-            console.log("MediaRecorder avviato, stato:", mediaRecorder.state); // Aggiunta per controllo
-            btn.innerHTML = "Ferma e analizza";
-            btn.style.background = "#222";
+            btn.disabled = true;
+            btn.style.background = "#888";
+            btn.innerHTML = "⏳ Registrazione in corso...";
+
+            // Countdown automatico di 4 secondi
+            let secondiRimasti = 4;
             statusDiv.style.color = "red";
-            statusDiv.innerText = "🔴 Sto registrando i movimenti della tua bocca...";
-        } else {
-            // -- Fine registrazione --
-            mediaRecorder.stop();
-            btn.innerText = "Registra Mimo";
-            btn.style.background = "#ff4b4b";
-            statusDiv.style.color = "#ffb400";
-            statusDiv.innerText = "⏳ Analisi in corso con LipNet...";
+            statusDiv.innerText = `🔴 Registrazione: ${secondiRimasti} secondi...`;
+
+            countdownInterval = setInterval(() => {
+                secondiRimasti--;
+                if (secondiRimasti > 0) {
+                    statusDiv.innerText = `🔴 Registrazione: ${secondiRimasti} secondi...`;
+                } else {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                    mediaRecorder.stop();
+                    btn.disabled = false;
+                    btn.innerHTML = "Registra Mimo";
+                    btn.style.background = "#ff4b4b";
+                    statusDiv.style.color = "#ffb400";
+                    statusDiv.innerText = "⏳ Analisi in corso con LipNet...";
+                }
+            }, 1000);
+
         }
     }
 
     async function inviaVideoALipnet(livelloId, fraseTarget) {
-        console.log("inviaVideoALipnet chiamata con:", livelloId, fraseTarget)
         const blob = new Blob(recordedChunks, {type: 'video/webm'});
         const formData = new FormData();
         formData.append('video', blob);
@@ -365,7 +378,7 @@
             // SBLOCCHIAMO IL TASTO AVANTI
             btnAvanti.classList.remove('disabilitato');
             btnAvanti.disabled = false;
-            btnAvanti.style.transform = "scale(1.05)"; // Piccolo feedback visivo   
+            btnAvanti.style.transform = "scale(1.05)"; // Piccolo feedback visivo
         } else {
             divRisultato.style.color = "#ff4b4b";
             divRisultato.innerHTML = "Sbagliato, riprova!";

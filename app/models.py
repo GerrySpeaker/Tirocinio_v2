@@ -382,7 +382,7 @@ def trascrivi_video(video_path: str, frase_attesa: str) -> dict:
     print(f"CER: {cer}")
 
     # Soglia configurabile per considerare il livello superato
-    livello_superato = wer <= 0.80
+    livello_superato = wer <= 1.0
 
     return {
         "trascrizione": trascrizione,
